@@ -3,57 +3,63 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Trust Games 👑</title>
+    <title>Trust Games | Official 👑</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
-        body { background-color: #050505; color: #e4e4e7; font-family: 'Inter', sans-serif; overflow: hidden; }
-        input::placeholder { color: #52525b; }
+        body { background-color: #050505; color: #e4e4e7; font-family: 'Inter', sans-serif; }
+        .admin-glow { border: 1px solid rgba(234, 179, 8, 0.4); box-shadow: 0 0 20px rgba(234, 179, 8, 0.1); }
+        iframe { border-radius: 20px; border: 4px solid #18181b; background: #000; }
+        .custom-scroll::-webkit-scrollbar { width: 5px; }
+        .custom-scroll::-webkit-scrollbar-thumb { background: #27272a; border-radius: 10px; }
     </style>
 </head>
 <body>
 
     <div id="auth-overlay" class="fixed inset-0 bg-black z-[100] flex items-center justify-center hidden">
-        <div class="bg-zinc-900 p-8 rounded-2xl w-80 border border-zinc-800 shadow-2xl">
-            <h2 class="text-2xl font-bold mb-6 text-white text-center">Trust Games 👑</h2>
-            
+        <div class="bg-zinc-900 p-8 rounded-3xl w-80 border border-zinc-800 shadow-2xl">
+            <h2 class="text-2xl font-black mb-6 text-white text-center italic tracking-tighter">TRUST GAMES 👑</h2>
             <div class="space-y-4">
                 <div>
                     <label class="text-[10px] font-bold text-zinc-500 uppercase ml-1">Username</label>
-                    <input id="auth-username" type="text" placeholder="Letters & numbers only" class="w-full p-3 bg-black border border-zinc-800 rounded-xl focus:border-blue-500 outline-none transition">
+                    <input id="auth-username" type="text" placeholder="Letters & numbers only" class="w-full p-3 bg-black border border-zinc-800 rounded-xl focus:border-blue-500 outline-none transition text-sm">
                 </div>
                 <div>
                     <label class="text-[10px] font-bold text-zinc-500 uppercase ml-1">Password</label>
-                    <input id="auth-pass" type="password" placeholder="••••••••" class="w-full p-3 bg-black border border-zinc-800 rounded-xl focus:border-blue-500 outline-none transition">
+                    <input id="auth-pass" type="password" placeholder="••••••••" class="w-full p-3 bg-black border border-zinc-800 rounded-xl focus:border-blue-500 outline-none transition text-sm">
                 </div>
-                
-                <button onclick="handleAuth('login')" class="w-full bg-white text-black font-bold py-3 rounded-xl hover:bg-zinc-200 transition mt-2">Login</button>
-                <button onclick="handleAuth('register')" class="w-full text-zinc-400 text-sm py-2 hover:text-white transition">No account? Create one</button>
+                <button onclick="handleAuth('login')" class="w-full bg-white text-black font-black py-3 rounded-xl hover:bg-zinc-200 transition mt-2 shadow-lg shadow-white/5">LOGIN</button>
+                <button onclick="handleAuth('register')" class="w-full text-zinc-500 text-xs py-2 hover:text-white transition">No account? Create one here</button>
             </div>
         </div>
     </div>
 
-    <div class="flex h-screen">
+    <div class="flex h-screen overflow-hidden">
         <aside class="w-64 border-r border-zinc-800 bg-zinc-950 p-6 flex flex-col">
-            <h1 class="text-xl font-black tracking-widest text-white mb-8 italic">TRUST GAMES</h1>
+            <h1 class="text-xl font-black tracking-widest text-white mb-10 italic underline decoration-yellow-500 decoration-4 underline-offset-8">TRUST GAMES</h1>
             
             <nav class="space-y-4 flex-1">
-                <button onclick="showTab('home')" class="block w-full text-left text-zinc-400 hover:text-white transition font-medium">🎮 Explore Games</button>
-                <button onclick="showTab('messages')" class="block w-full text-left text-zinc-400 hover:text-white transition font-medium">💬 Messages</button>
-                <div id="admin-nav" class="hidden pt-6 mt-4 border-t border-zinc-800">
-                    <button onclick="showTab('admin')" class="text-yellow-500 font-bold hover:text-yellow-400 flex items-center gap-2">🛠 ADMIN PANEL</button>
+                <button onclick="showTab('home')" class="block w-full text-left text-zinc-400 hover:text-white transition font-bold text-sm uppercase tracking-wider">🎮 Games</button>
+                <button onclick="showTab('messages')" class="block w-full text-left text-zinc-400 hover:text-white transition font-bold text-sm uppercase tracking-wider">💬 Chat</button>
+                <div id="admin-nav" class="hidden pt-6 mt-6 border-t border-zinc-900">
+                    <button onclick="showTab('admin')" class="text-yellow-500 font-black hover:text-yellow-400 flex items-center gap-2 text-sm tracking-tighter">🛠 ADMIN CONTROL</button>
                 </div>
             </nav>
 
-            <div class="mt-auto pt-6 border-t border-zinc-800">
-                <div class="flex items-center gap-3 mb-2">
-                    <div class="w-8 h-8 rounded-full bg-zinc-800 border border-zinc-700 flex items-center justify-center text-xs">👤</div>
-                    <p id="user-display" class="text-sm font-bold text-white">Guest</p>
+            <div class="mt-auto pt-6 border-t border-zinc-900">
+                <div class="flex items-center gap-3 mb-3">
+                    <div class="w-10 h-10 rounded-2xl bg-gradient-to-br from-zinc-800 to-zinc-900 border border-zinc-700 flex items-center justify-center text-lg">👑</div>
+                    <div>
+                        <p id="user-display" class="text-sm font-black text-white leading-none">Guest</p>
+                        <p id="user-role" class="text-[9px] text-zinc-500 font-bold uppercase mt-1">Player</p>
+                    </div>
                 </div>
-                <p id="user-credits" class="text-xs text-yellow-500 font-mono font-bold tracking-tighter">0 CREDITS</p>
+                <div class="bg-black/50 p-3 rounded-xl border border-zinc-800">
+                    <p id="user-credits" class="text-xs text-yellow-500 font-mono font-bold tracking-tighter">0.00 CREDITS</p>
+                </div>
             </div>
         </aside>
 
-        <main id="content" class="flex-1 overflow-y-auto p-10 bg-[#070707]">
+        <main id="content" class="flex-1 overflow-y-auto p-10 bg-[#070707] custom-scroll">
             </main>
     </div>
 
@@ -62,14 +68,14 @@
         import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
         import { getFirestore, doc, setDoc, onSnapshot, collection, addDoc, query, getDocs, updateDoc, increment, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
-        // REPLACE WITH YOUR CONFIG
         const firebaseConfig = {
             apiKey: "AIzaSyDV1Iq9F7N152JjXN7goayLLBiES8B4HkU",
             authDomain: "trust-games-1.firebaseapp.com",
             projectId: "trust-games-1",
             storageBucket: "trust-games-1.firebasestorage.app",
             messagingSenderId: "923318206410",
-            appId: "1:923318206410:web:646cfe42238f9136cb5933"
+            appId: "1:923318206410:web:646cfe42238f9136cb5933",
+            measurementId: "G-NMV7B988BL"
         };
 
         const app = initializeApp(firebaseConfig);
@@ -78,14 +84,12 @@
 
         let userProfile = null;
 
-        // --- AUTH LOGIC (USERNAME ONLY) ---
+        // --- AUTH: USERNAME ONLY ---
         window.handleAuth = async (type) => {
             const username = document.getElementById('auth-username').value.trim().toLowerCase();
             const pass = document.getElementById('auth-pass').value;
             
-            if (!/^[a-zA-Z0-9_]+$/.test(username)) return alert("Username: Letters, numbers, underscores only!");
-            
-            // Convert username to a fake email for Firebase
+            if (!username || !pass) return alert("Fill in all fields!");
             const fakeEmail = `${username}@trustgames.com`;
 
             try {
@@ -93,20 +97,16 @@
                     const res = await createUserWithEmailAndPassword(auth, fakeEmail, pass);
                     await setDoc(doc(db, "users", res.user.uid), {
                         username: username,
-                        display_name: username,
                         credits: 0,
                         role: 'user',
                         is_verified: false,
-                        is_banned: false,
-                        created_at: serverTimestamp()
+                        is_banned: false
                     });
                 } else {
                     await signInWithEmailAndPassword(auth, fakeEmail, pass);
                 }
                 document.getElementById('auth-overlay').classList.add('hidden');
-            } catch (err) { 
-                alert(err.code === 'auth/user-not-found' ? "User not found!" : err.message); 
-            }
+            } catch (err) { alert(err.message); }
         };
 
         onAuthStateChanged(auth, (user) => {
@@ -117,14 +117,9 @@
                     if (!snap.exists()) return;
                     userProfile = snap.data();
                     document.getElementById('user-display').innerText = userProfile.username;
+                    document.getElementById('user-role').innerText = userProfile.role;
                     document.getElementById('user-credits').innerText = `${Number(userProfile.credits).toLocaleString()} CREDITS`;
                     
-                    if (userProfile.is_banned) {
-                        alert("BANNED: " + userProfile.ban_reason);
-                        auth.signOut();
-                        return;
-                    }
-
                     if (userProfile.role === 'owner' || userProfile.role === 'admin') {
                         document.getElementById('admin-nav').classList.remove('hidden');
                     }
@@ -133,24 +128,22 @@
             }
         });
 
-        // --- TAB LOGIC ---
+        // --- TABS ---
         window.showTab = async (tab) => {
             const main = document.getElementById('content');
+            
             if (tab === 'home') {
-                main.innerHTML = `<h2 class="text-3xl font-black mb-8 tracking-tighter">GAMES</h2><div id="game-list" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"></div>`;
+                main.innerHTML = `<h2 class="text-4xl font-black mb-10 tracking-tighter">GAMES</h2><div id="game-list" class="grid grid-cols-1 lg:grid-cols-2 gap-8"></div>`;
                 const q = query(collection(db, "games"));
                 const snap = await getDocs(q);
                 snap.forEach(d => {
                     const g = d.data();
                     document.getElementById('game-list').innerHTML += `
-                        <div class="bg-zinc-900 rounded-3xl overflow-hidden border border-zinc-800 shadow-lg">
-                            <iframe src="${g.url}" class="w-full h-48 bg-black"></iframe>
-                            <div class="p-5 flex justify-between items-center">
-                                <div>
-                                    <h4 class="font-bold text-white">${g.name}</h4>
-                                    <p class="text-[10px] text-zinc-500 uppercase tracking-widest font-bold">${g.category}</p>
-                                </div>
-                                <button class="bg-white text-black text-xs font-black px-4 py-2 rounded-full">PLAY</button>
+                        <div class="bg-zinc-900 rounded-[2.5rem] overflow-hidden border border-zinc-800 p-2 shadow-2xl">
+                            <iframe src="${g.url}" class="w-full h-72"></iframe>
+                            <div class="p-6 flex justify-between items-center">
+                                <div><h4 class="font-black text-xl text-white uppercase italic">${g.name}</h4><p class="text-[10px] text-zinc-500 font-bold tracking-widest uppercase">${g.category}</p></div>
+                                <span class="bg-zinc-800 text-[9px] font-black px-3 py-1 rounded-full text-zinc-400">${g.visibility}</span>
                             </div>
                         </div>`;
                 });
@@ -158,36 +151,45 @@
 
             if (tab === 'admin') {
                 main.innerHTML = `
-                <div class="max-w-2xl space-y-6">
-                    <h2 class="text-3xl font-black text-yellow-500 mb-8 tracking-tighter italic underline decoration-4">ADMIN DASHBOARD</h2>
-                    <div class="bg-zinc-900 p-8 rounded-3xl border border-zinc-800">
-                        <h3 class="font-bold mb-4 text-white">Push New Game</h3>
-                        <div class="space-y-3">
-                            <input id="g-name" placeholder="Game Title" class="w-full p-3 bg-black border border-zinc-800 rounded-xl outline-none focus:border-blue-500 transition">
-                            <input id="g-url" placeholder="Iframe URL (https://...)" class="w-full p-3 bg-black border border-zinc-800 rounded-xl outline-none focus:border-blue-500 transition">
-                            <select id="g-vis" class="w-full p-3 bg-black border border-zinc-800 rounded-xl text-zinc-400">
-                                <option value="public">Visible to Everyone</option>
-                                <option value="verified">Verified Only</option>
-                            </select>
-                            <button onclick="addGame()" class="w-full bg-blue-600 text-white font-bold p-3 rounded-xl hover:bg-blue-500 transition">Add to Platform</button>
+                <div class="max-w-3xl space-y-8">
+                    <h2 class="text-4xl font-black text-yellow-500 italic mb-10 underline decoration-yellow-500/20">ADMIN_PANEL</h2>
+                    <div class="bg-zinc-900 p-8 rounded-[2rem] border border-zinc-800 admin-glow">
+                        <h3 class="font-black mb-6 uppercase tracking-tighter text-white">Add New Game</h3>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                            <input id="g-name" placeholder="Name" class="bg-black p-4 rounded-2xl border border-zinc-800 text-sm outline-none">
+                            <input id="g-url" placeholder="URL (https://)" class="bg-black p-4 rounded-2xl border border-zinc-800 text-sm outline-none">
                         </div>
+                        <button onclick="addGame()" class="w-full bg-blue-600 text-white font-black p-4 rounded-2xl hover:bg-blue-500 transition shadow-lg shadow-blue-900/20">PUSH GAME LIVE</button>
+                    </div>
+
+                    <div class="bg-zinc-900 p-8 rounded-[2rem] border border-zinc-800">
+                        <h3 class="font-black mb-6 uppercase tracking-tighter text-white">Manage Credits</h3>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                            <input id="c-uid" placeholder="User UID" class="bg-black p-4 rounded-2xl border border-zinc-800 text-sm outline-none">
+                            <input id="c-amt" type="number" placeholder="Amount (1T Max)" class="bg-black p-4 rounded-2xl border border-zinc-800 text-sm outline-none">
+                        </div>
+                        <button onclick="grantCredits()" class="w-full bg-yellow-600 text-black font-black p-4 rounded-2xl hover:bg-yellow-500 transition">DELIVER CREDITS</button>
                     </div>
                 </div>`;
             }
         };
 
+        // --- ACTIONS ---
         window.addGame = async () => {
             const name = document.getElementById('g-name').value;
             const url = document.getElementById('g-url').value;
-            if(!url.startsWith('https://')) return alert("URL must be HTTPS!");
-            await addDoc(collection(db, "games"), {
-                name: name,
-                url: url,
-                visibility: document.getElementById('g-vis').value,
-                category: "Web"
-            });
-            alert("Success!");
+            if(!url.startsWith('https://')) return alert("Use HTTPS!");
+            await addDoc(collection(db, "games"), { name, url, visibility: 'public', category: 'General' });
+            alert("Game Saved!");
             showTab('home');
+        };
+
+        window.grantCredits = async () => {
+            const uid = document.getElementById('c-uid').value;
+            const amt = parseInt(document.getElementById('c-amt').value);
+            if(amt > 1000000000000) return alert("Limit Exceeded!");
+            await updateDoc(doc(db, "users", uid), { credits: increment(amt) });
+            alert("Credits Granted!");
         };
 
     </script>
