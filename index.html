@@ -6,49 +6,63 @@
     <title>Trust Games 👑</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
-        body { background-color: #050505; color: #e4e4e7; font-family: 'Inter', sans-serif; }
-        .admin-glow { border: 1px solid rgba(234, 179, 8, 0.3); box-shadow: 0 0 15px rgba(234, 179, 8, 0.1); }
+        body { background-color: #050505; color: #e4e4e7; font-family: 'Inter', sans-serif; overflow: hidden; }
+        input::placeholder { color: #52525b; }
     </style>
 </head>
 <body>
+
     <div id="auth-overlay" class="fixed inset-0 bg-black z-[100] flex items-center justify-center hidden">
-        <div class="bg-zinc-900 p-8 rounded-2xl w-80 border border-zinc-800">
-            <h2 class="text-2xl font-bold mb-4">Join Trust Games</h2>
-            <input id="auth-email" type="email" placeholder="Email" class="w-full p-2 mb-2 bg-black border border-zinc-800 rounded">
-            <input id="auth-pass" type="password" placeholder="Password" class="w-full p-2 mb-4 bg-black border border-zinc-800 rounded">
-            <button onclick="handleAuth('login')" class="w-full bg-white text-black font-bold p-2 rounded mb-2">Login</button>
-            <button onclick="handleAuth('register')" class="w-full border border-zinc-700 p-2 rounded text-sm">Create Account</button>
+        <div class="bg-zinc-900 p-8 rounded-2xl w-80 border border-zinc-800 shadow-2xl">
+            <h2 class="text-2xl font-bold mb-6 text-white text-center">Trust Games 👑</h2>
+            
+            <div class="space-y-4">
+                <div>
+                    <label class="text-[10px] font-bold text-zinc-500 uppercase ml-1">Username</label>
+                    <input id="auth-username" type="text" placeholder="Letters & numbers only" class="w-full p-3 bg-black border border-zinc-800 rounded-xl focus:border-blue-500 outline-none transition">
+                </div>
+                <div>
+                    <label class="text-[10px] font-bold text-zinc-500 uppercase ml-1">Password</label>
+                    <input id="auth-pass" type="password" placeholder="••••••••" class="w-full p-3 bg-black border border-zinc-800 rounded-xl focus:border-blue-500 outline-none transition">
+                </div>
+                
+                <button onclick="handleAuth('login')" class="w-full bg-white text-black font-bold py-3 rounded-xl hover:bg-zinc-200 transition mt-2">Login</button>
+                <button onclick="handleAuth('register')" class="w-full text-zinc-400 text-sm py-2 hover:text-white transition">No account? Create one</button>
+            </div>
         </div>
     </div>
 
     <div class="flex h-screen">
         <aside class="w-64 border-r border-zinc-800 bg-zinc-950 p-6 flex flex-col">
-            <h1 class="text-xl font-black tracking-widest text-white mb-8">TRUST GAMES</h1>
+            <h1 class="text-xl font-black tracking-widest text-white mb-8 italic">TRUST GAMES</h1>
             
             <nav class="space-y-4 flex-1">
-                <button onclick="showTab('home')" class="block w-full text-left hover:text-white transition">🎮 Explore Games</button>
-                <button onclick="showTab('profile')" class="block w-full text-left hover:text-white transition">👤 My Profile</button>
-                <div id="admin-nav" class="hidden pt-4 border-t border-zinc-800">
-                    <button onclick="showTab('admin')" class="text-yellow-500 font-bold tracking-tighter hover:text-yellow-400">🛠 ADMIN PANEL</button>
+                <button onclick="showTab('home')" class="block w-full text-left text-zinc-400 hover:text-white transition font-medium">🎮 Explore Games</button>
+                <button onclick="showTab('messages')" class="block w-full text-left text-zinc-400 hover:text-white transition font-medium">💬 Messages</button>
+                <div id="admin-nav" class="hidden pt-6 mt-4 border-t border-zinc-800">
+                    <button onclick="showTab('admin')" class="text-yellow-500 font-bold hover:text-yellow-400 flex items-center gap-2">🛠 ADMIN PANEL</button>
                 </div>
             </nav>
 
             <div class="mt-auto pt-6 border-t border-zinc-800">
-                <p id="user-display" class="text-sm font-bold text-white">Guest</p>
-                <p id="user-credits" class="text-xs text-yellow-500 font-mono">0 CREDITS</p>
+                <div class="flex items-center gap-3 mb-2">
+                    <div class="w-8 h-8 rounded-full bg-zinc-800 border border-zinc-700 flex items-center justify-center text-xs">👤</div>
+                    <p id="user-display" class="text-sm font-bold text-white">Guest</p>
+                </div>
+                <p id="user-credits" class="text-xs text-yellow-500 font-mono font-bold tracking-tighter">0 CREDITS</p>
             </div>
         </aside>
 
-        <main id="content" class="flex-1 overflow-y-auto p-10">
+        <main id="content" class="flex-1 overflow-y-auto p-10 bg-[#070707]">
             </main>
     </div>
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
         import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
-        import { getFirestore, doc, setDoc, getDoc, onSnapshot, collection, addDoc, query, orderBy, getDocs, updateDoc, increment } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+        import { getFirestore, doc, setDoc, onSnapshot, collection, addDoc, query, getDocs, updateDoc, increment, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
-        // PASTE YOUR CONFIG HERE
+        // REPLACE WITH YOUR CONFIG
         const firebaseConfig = {
             apiKey: "AIzaSyDV1Iq9F7N152JjXN7goayLLBiES8B4HkU",
             authDomain: "trust-games-1.firebaseapp.com",
@@ -64,24 +78,35 @@
 
         let userProfile = null;
 
-        // --- AUTH LOGIC ---
+        // --- AUTH LOGIC (USERNAME ONLY) ---
         window.handleAuth = async (type) => {
-            const email = document.getElementById('auth-email').value;
+            const username = document.getElementById('auth-username').value.trim().toLowerCase();
             const pass = document.getElementById('auth-pass').value;
+            
+            if (!/^[a-zA-Z0-9_]+$/.test(username)) return alert("Username: Letters, numbers, underscores only!");
+            
+            // Convert username to a fake email for Firebase
+            const fakeEmail = `${username}@trustgames.com`;
+
             try {
                 if (type === 'register') {
-                    const res = await createUserWithEmailAndPassword(auth, email, pass);
+                    const res = await createUserWithEmailAndPassword(auth, fakeEmail, pass);
                     await setDoc(doc(db, "users", res.user.uid), {
-                        username: email.split('@')[0],
+                        username: username,
+                        display_name: username,
                         credits: 0,
                         role: 'user',
-                        is_verified: false
+                        is_verified: false,
+                        is_banned: false,
+                        created_at: serverTimestamp()
                     });
                 } else {
-                    await signInWithEmailAndPassword(auth, email, pass);
+                    await signInWithEmailAndPassword(auth, fakeEmail, pass);
                 }
                 document.getElementById('auth-overlay').classList.add('hidden');
-            } catch (err) { alert(err.message); }
+            } catch (err) { 
+                alert(err.code === 'auth/user-not-found' ? "User not found!" : err.message); 
+            }
         };
 
         onAuthStateChanged(auth, (user) => {
@@ -89,9 +114,17 @@
                 document.getElementById('auth-overlay').classList.remove('hidden');
             } else {
                 onSnapshot(doc(db, "users", user.uid), (snap) => {
+                    if (!snap.exists()) return;
                     userProfile = snap.data();
                     document.getElementById('user-display').innerText = userProfile.username;
                     document.getElementById('user-credits').innerText = `${Number(userProfile.credits).toLocaleString()} CREDITS`;
+                    
+                    if (userProfile.is_banned) {
+                        alert("BANNED: " + userProfile.ban_reason);
+                        auth.signOut();
+                        return;
+                    }
+
                     if (userProfile.role === 'owner' || userProfile.role === 'admin') {
                         document.getElementById('admin-nav').classList.remove('hidden');
                     }
@@ -100,21 +133,24 @@
             }
         });
 
-        // --- CORE FEATURES ---
+        // --- TAB LOGIC ---
         window.showTab = async (tab) => {
             const main = document.getElementById('content');
             if (tab === 'home') {
-                main.innerHTML = `<h2 class="text-3xl font-bold mb-8">Verified Games</h2><div id="game-list" class="grid grid-cols-1 md:grid-cols-2 gap-6"></div>`;
+                main.innerHTML = `<h2 class="text-3xl font-black mb-8 tracking-tighter">GAMES</h2><div id="game-list" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"></div>`;
                 const q = query(collection(db, "games"));
                 const snap = await getDocs(q);
                 snap.forEach(d => {
                     const g = d.data();
                     document.getElementById('game-list').innerHTML += `
-                        <div class="bg-zinc-900 p-4 rounded-2xl border border-zinc-800">
-                            <iframe src="${g.url}" class="w-full h-64 rounded-lg bg-black mb-4"></iframe>
-                            <div class="flex justify-between items-center">
-                                <div><h4 class="font-bold">${g.name}</h4><p class="text-xs text-zinc-500">${g.category}</p></div>
-                                <span class="text-[10px] bg-zinc-800 px-2 py-1 rounded text-zinc-400 uppercase">${g.visibility}</span>
+                        <div class="bg-zinc-900 rounded-3xl overflow-hidden border border-zinc-800 shadow-lg">
+                            <iframe src="${g.url}" class="w-full h-48 bg-black"></iframe>
+                            <div class="p-5 flex justify-between items-center">
+                                <div>
+                                    <h4 class="font-bold text-white">${g.name}</h4>
+                                    <p class="text-[10px] text-zinc-500 uppercase tracking-widest font-bold">${g.category}</p>
+                                </div>
+                                <button class="bg-white text-black text-xs font-black px-4 py-2 rounded-full">PLAY</button>
                             </div>
                         </div>`;
                 });
@@ -122,45 +158,38 @@
 
             if (tab === 'admin') {
                 main.innerHTML = `
-                <div class="max-w-2xl space-y-8">
-                    <div class="bg-zinc-900 p-8 rounded-2xl border border-yellow-900/20 admin-glow">
-                        <h3 class="text-xl font-bold mb-4 text-yellow-500">Add New Game</h3>
-                        <input id="g-name" placeholder="Game Name" class="w-full p-2 mb-2 bg-black rounded">
-                        <input id="g-url" placeholder="Embed URL (https://...)" class="w-full p-2 mb-2 bg-black rounded">
-                        <select id="g-vis" class="w-full p-2 mb-4 bg-black rounded text-zinc-400">
-                            <option value="public">Public</option>
-                            <option value="verified">Verified Only</option>
-                        </select>
-                        <button onclick="addGame()" class="w-full bg-yellow-600 text-black font-bold p-2 rounded">Push Game Live</button>
-                    </div>
-                    <div class="bg-zinc-900 p-8 rounded-2xl border border-zinc-800">
-                        <h3 class="text-xl font-bold mb-4">Grant Credits</h3>
-                        <input id="c-uid" placeholder="User UID" class="w-full p-2 mb-2 bg-black rounded">
-                        <input id="c-amt" type="number" placeholder="Amount (Max 1T)" class="w-full p-2 mb-4 bg-black rounded">
-                        <button onclick="grantCredits()" class="w-full bg-white text-black font-bold p-2 rounded">Deliver Credits</button>
+                <div class="max-w-2xl space-y-6">
+                    <h2 class="text-3xl font-black text-yellow-500 mb-8 tracking-tighter italic underline decoration-4">ADMIN DASHBOARD</h2>
+                    <div class="bg-zinc-900 p-8 rounded-3xl border border-zinc-800">
+                        <h3 class="font-bold mb-4 text-white">Push New Game</h3>
+                        <div class="space-y-3">
+                            <input id="g-name" placeholder="Game Title" class="w-full p-3 bg-black border border-zinc-800 rounded-xl outline-none focus:border-blue-500 transition">
+                            <input id="g-url" placeholder="Iframe URL (https://...)" class="w-full p-3 bg-black border border-zinc-800 rounded-xl outline-none focus:border-blue-500 transition">
+                            <select id="g-vis" class="w-full p-3 bg-black border border-zinc-800 rounded-xl text-zinc-400">
+                                <option value="public">Visible to Everyone</option>
+                                <option value="verified">Verified Only</option>
+                            </select>
+                            <button onclick="addGame()" class="w-full bg-blue-600 text-white font-bold p-3 rounded-xl hover:bg-blue-500 transition">Add to Platform</button>
+                        </div>
                     </div>
                 </div>`;
             }
         };
 
         window.addGame = async () => {
+            const name = document.getElementById('g-name').value;
+            const url = document.getElementById('g-url').value;
+            if(!url.startsWith('https://')) return alert("URL must be HTTPS!");
             await addDoc(collection(db, "games"), {
-                name: document.getElementById('g-name').value,
-                url: document.getElementById('g-url').value,
+                name: name,
+                url: url,
                 visibility: document.getElementById('g-vis').value,
                 category: "Web"
             });
-            alert("Game Added!");
+            alert("Success!");
             showTab('home');
         };
 
-        window.grantCredits = async () => {
-            const uid = document.getElementById('c-uid').value;
-            const amt = parseInt(document.getElementById('c-amt').value);
-            if(amt > 1000000000000) return alert("Over limit!");
-            await updateDoc(doc(db, "users", uid), { credits: increment(amt) });
-            alert("Credits Granted!");
-        };
     </script>
 </body>
 </html>
