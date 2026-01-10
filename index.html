@@ -8,19 +8,58 @@
     <style>
         body { background-color: #050505; color: #e4e4e7; font-family: 'Inter', sans-serif; overflow: hidden; }
         #app-shell { display: none; }
+        
+        /* Sidebar & UI Components */
         .sidebar-btn { transition: all 0.2s; border-radius: 12px; cursor: pointer; }
         .sidebar-btn:hover { background: #18181b; color: white; }
         iframe { border-radius: 24px; border: 4px solid #18181b; background: #000; height: 500px; width: 100%; }
         .custom-scroll::-webkit-scrollbar { width: 4px; }
         .custom-scroll::-webkit-scrollbar-thumb { background: #27272a; border-radius: 10px; }
-        #loader { background: #050505; position: fixed; inset: 0; z-index: 200; display: flex; items-center; justify-content: center; }
+        
+        /* Loader */
+        #loader { background: #050505; position: fixed; inset: 0; z-index: 200; display: flex; align-items: center; justify-content: center; }
         .spinner { width: 40px; height: 40px; border: 4px solid #18181b; border-top-color: #3b82f6; border-radius: 50%; animation: spin 0.8s linear infinite; }
         @keyframes spin { to { transform: rotate(360deg); } }
+
+        /* NOTIFICATION SYSTEM (Bottom Right Stack) */
+        #notification-container {
+            position: fixed;
+            bottom: 24px;
+            right: 24px;
+            z-index: 999;
+            display: flex;
+            flex-direction: column-reverse; /* Newest at bottom, pushes old ones up */
+            gap: 12px;
+            pointer-events: none;
+        }
+        .toast {
+            background: #18181b;
+            border-left: 4px solid #3b82f6;
+            color: white;
+            padding: 16px 20px;
+            border-radius: 16px;
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.4);
+            width: 320px;
+            font-size: 14px;
+            transform: translateX(120%);
+            transition: all 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            pointer-events: auto;
+            border-top: 1px solid #27272a;
+        }
+        .toast.show { transform: translateX(0); }
+        .toast.owner-msg { border-left-color: #eab308; } /* Golden border for Owner */
     </style>
 </head>
 <body>
 
-    <div id="loader"><div class="flex flex-col items-center gap-4"><div class="spinner"></div><p class="text-[10px] font-black tracking-[0.3em] text-zinc-500 uppercase">Securing Connection</p></div></div>
+    <div id="notification-container"></div>
+
+    <div id="loader">
+        <div class="flex flex-col items-center gap-4">
+            <div class="spinner"></div>
+            <p class="text-[10px] font-black tracking-[0.3em] text-zinc-500 uppercase">Securing Connection</p>
+        </div>
+    </div>
 
     <div id="auth-overlay" class="fixed inset-0 bg-black z-[100] flex items-center justify-center hidden">
         <div class="bg-zinc-900 p-8 rounded-[2.5rem] w-80 border border-zinc-800 shadow-2xl text-center">
@@ -42,7 +81,7 @@
                 <button onclick="showTab('home')" class="sidebar-btn w-full text-left p-4 text-zinc-400 font-bold text-sm uppercase">🎮 Explore</button>
                 <button onclick="showTab('messages')" class="sidebar-btn w-full text-left p-4 text-zinc-400 font-bold text-sm uppercase">📩 Messages</button>
                 <div id="admin-nav" class="hidden pt-6 mt-6 border-t border-zinc-900">
-                    <button onclick="showTab('admin')" class="sidebar-btn w-full text-left p-4 text-yellow-500 font-black text-sm uppercase italic">🛠 Command Center</button>
+                    <button onclick="showTab('admin')" class="sidebar-btn w-full text-left p-4 text-yellow-500 font-black text-sm uppercase italic tracking-tighter">🛠 Command Center</button>
                 </div>
             </nav>
             <div class="mt-auto">
@@ -80,7 +119,29 @@
         let userProfile = null;
         let activeRoomId = null;
 
-        // --- GATEKEEPER ---
+        // --- GLOBAL NOTIFICATION SYSTEM ---
+        window.notify = (message, title = "System", type = "standard") => {
+            const container = document.getElementById('notification-container');
+            const toast = document.createElement('div');
+            toast.className = `toast ${type === 'owner' ? 'owner-msg' : ''}`;
+            
+            toast.innerHTML = `
+                <div class="flex flex-col">
+                    <span class="text-[9px] font-black uppercase tracking-widest text-zinc-500 mb-1">${title}</span>
+                    <p class="font-bold leading-tight">${message}</p>
+                </div>
+            `;
+            container.appendChild(toast);
+            setTimeout(() => toast.classList.add('show'), 100);
+            
+            // Auto-remove after 15 seconds
+            setTimeout(() => {
+                toast.classList.remove('show');
+                setTimeout(() => toast.remove(), 500);
+            }, 15000);
+        };
+
+        // --- GATEKEEPER & BROADCAST ---
         onAuthStateChanged(auth, (user) => {
             if (!user) {
                 document.getElementById('app-shell').style.display = 'none';
@@ -91,19 +152,30 @@
                 onSnapshot(doc(db, "users", username), (snap) => {
                     if (!snap.exists()) { auth.signOut(); return; }
                     userProfile = snap.data();
-                    if(userProfile.is_banned) { alert("Banned."); auth.signOut(); return; }
+                    if(userProfile.is_banned) { notify("Account Banned", "SECURITY"); auth.signOut(); return; }
+                    
                     document.getElementById('user-display').innerText = userProfile.username;
                     document.getElementById('user-credits').innerText = `${Number(userProfile.credits).toLocaleString()} CR`;
                     if(userProfile.is_verified) document.getElementById('verified-badge').classList.remove('hidden');
                     if(userProfile.role === 'owner' || userProfile.role === 'admin') document.getElementById('admin-nav').classList.remove('hidden');
+                    
                     document.getElementById('auth-overlay').classList.add('hidden');
                     document.getElementById('loader').style.display = 'none';
                     document.getElementById('app-shell').style.display = 'flex';
                     showTab('home');
                 });
-                // BROADCAST LISTENER
+
+                // REPLACED ALERT WITH NOTIFY SYSTEM
                 const bQ = query(collection(db, "broadcasts"), orderBy("time", "desc"), limit(1));
-                onSnapshot(bQ, (s) => s.docChanges().forEach(c => { if (c.type === "added") alert(`👑 ADMIN:\n${c.doc.data().message}`); }));
+                onSnapshot(bQ, (s) => s.docChanges().forEach(c => { 
+                    if (c.type === "added") {
+                        const data = c.doc.data();
+                        if (data.time) {
+                            const isOwner = data.role === 'owner';
+                            notify(data.message, isOwner ? "👑 OWNER ANNOUNCEMENT" : "SYSTEM MESSAGE", isOwner ? 'owner' : 'standard');
+                        }
+                    }
+                }));
             }
         });
 
@@ -114,8 +186,9 @@
                 if (type === 'register') {
                     const res = await createUserWithEmailAndPassword(auth, `${u}@trustgames.com`, p);
                     await setDoc(doc(db, "users", u), { username: u, credits: 0, role: 'user', is_verified: false, is_banned: false });
+                    notify("Account Created Successfully", "WELCOME");
                 } else await signInWithEmailAndPassword(auth, `${u}@trustgames.com`, p);
-            } catch (err) { alert(err.message); }
+            } catch (err) { notify(err.message, "AUTH ERROR"); }
         };
 
         window.logoutUser = () => signOut(auth).then(() => location.reload());
@@ -127,30 +200,30 @@
                 const s = await getDocs(query(collection(db, "games")));
                 s.forEach(d => {
                     const g = d.data();
-                    document.getElementById('gl').innerHTML += `<div class="bg-zinc-900 rounded-[3rem] p-3 border border-zinc-800"><iframe src="${g.url}"></iframe><div class="p-8 flex justify-between items-center"><h4 class="font-black text-2xl uppercase italic text-white">${g.name}</h4><span class="text-zinc-600 font-black text-xs uppercase">Official</span></div></div>`;
+                    document.getElementById('gl').innerHTML += `<div class="bg-zinc-900 rounded-[3rem] p-3 border border-zinc-800 shadow-xl overflow-hidden"><iframe src="${g.url}"></iframe><div class="p-8"><h4 class="font-black text-2xl uppercase italic text-white">${g.name}</h4></div></div>`;
                 });
             }
 
             if (t === 'messages') {
                 main.innerHTML = `
-                <div class="flex h-[80vh] bg-zinc-900/40 rounded-[2.5rem] border border-zinc-800 overflow-hidden shadow-2xl">
+                <div class="flex h-[80vh] bg-zinc-900/40 rounded-[2.5rem] border border-zinc-800 overflow-hidden">
                     <div class="w-80 border-r border-zinc-800 flex flex-col bg-black/20">
                         <div class="p-6 border-b border-zinc-800 space-y-3">
                             <h2 class="text-xl font-black italic uppercase text-white">Inbox</h2>
                             <div class="flex gap-2">
-                                <button onclick="createNewChat('dm')" class="flex-1 bg-blue-600/10 text-blue-400 py-2 rounded-xl text-[9px] font-black uppercase border border-blue-600/20">+ DM</button>
-                                <button onclick="createNewChat('group')" class="flex-1 bg-purple-600/10 text-purple-400 py-2 rounded-xl text-[9px] font-black uppercase border border-purple-600/20">+ GROUP</button>
+                                <button onclick="createNewChat('dm')" class="flex-1 bg-blue-600/10 text-blue-400 py-2 rounded-xl text-[9px] font-black uppercase border border-blue-600/20 hover:bg-blue-600 hover:text-white transition">+ DM</button>
+                                <button onclick="createNewChat('group')" class="flex-1 bg-purple-600/10 text-purple-400 py-2 rounded-xl text-[9px] font-black uppercase border border-purple-600/20 hover:bg-purple-600 hover:text-white transition">+ GROUP</button>
                             </div>
                         </div>
-                        <div id="chat-list" class="flex-1 overflow-y-auto p-4 space-y-2"></div>
+                        <div id="chat-list" class="flex-1 overflow-y-auto p-4 space-y-2 custom-scroll"></div>
                     </div>
                     <div id="chat-window" class="flex-1 flex flex-col bg-zinc-950/30">
-                        <div id="chat-header" class="p-6 border-b border-zinc-800"><p id="active-chat-name" class="font-black uppercase italic text-zinc-600">Select a Secure Channel</p></div>
+                        <div id="chat-header" class="p-6 border-b border-zinc-800"><p id="active-chat-name" class="font-black uppercase italic text-zinc-600">Secure Channel</p></div>
                         <div id="chat-bubbles" class="flex-1 overflow-y-auto p-6 space-y-4 flex flex-col custom-scroll"></div>
                         <div class="p-6 bg-black/40 border-t border-zinc-800">
                             <div id="chat-input-area" class="hidden flex gap-4">
-                                <input id="chat-input" type="text" placeholder="Type encrypted message..." class="flex-1 bg-zinc-900 border border-zinc-800 p-4 rounded-2xl outline-none text-sm text-white">
-                                <button onclick="sendMessage()" class="bg-blue-600 text-white px-8 rounded-2xl font-black">SEND</button>
+                                <input id="chat-input" type="text" placeholder="Type message..." class="flex-1 bg-zinc-900 border border-zinc-800 p-4 rounded-2xl outline-none text-sm text-white focus:border-blue-500 transition">
+                                <button onclick="sendMessage()" class="bg-blue-600 text-white px-8 rounded-2xl font-black hover:scale-105 transition">SEND</button>
                             </div>
                         </div>
                     </div>
@@ -165,39 +238,39 @@
                     <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
                         <div class="lg:col-span-2 space-y-6">
                             <div class="bg-zinc-900 p-8 rounded-[2rem] border border-blue-900/30">
-                                <h3 class="text-xs font-black text-blue-400 mb-4 uppercase italic">Global Broadcast</h3>
+                                <h3 class="text-xs font-black text-blue-400 mb-4 uppercase italic">Global Broadcast (Owner Only)</h3>
                                 <div class="flex gap-4">
                                     <input id="sys-msg" placeholder="Message to all players..." class="flex-1 bg-black p-4 rounded-2xl text-white outline-none border border-zinc-800">
-                                    <button onclick="sendGlobalMsg()" class="bg-blue-600 px-8 rounded-2xl font-black">PUSH</button>
+                                    <button onclick="sendGlobalMsg()" class="bg-blue-600 px-8 rounded-2xl font-black shadow-lg shadow-blue-900/40">PUSH</button>
                                 </div>
                             </div>
                             <div class="bg-zinc-900 p-8 rounded-[2rem] border border-zinc-800">
                                 <h3 class="text-xs font-black mb-4 uppercase text-yellow-500">Add Game</h3>
-                                <input id="g-n" placeholder="Name" class="w-full bg-black p-4 rounded-2xl mb-2 text-white outline-none border border-zinc-800">
-                                <input id="g-u" placeholder="https://..." class="w-full bg-black p-4 rounded-2xl mb-4 text-white outline-none border border-zinc-800">
+                                <input id="g-n" placeholder="Game Name" class="w-full bg-black p-4 rounded-2xl mb-2 text-white outline-none border border-zinc-800">
+                                <input id="g-u" placeholder="HTTPS URL" class="w-full bg-black p-4 rounded-2xl mb-4 text-white outline-none border border-zinc-800">
                                 <button onclick="addGame()" class="w-full bg-white text-black font-black py-4 rounded-2xl">PUBLISH</button>
                             </div>
                         </div>
                         <div class="bg-zinc-900 p-8 rounded-[2rem] border border-red-900/40">
                             <h3 class="text-xs font-black text-red-500 mb-4 uppercase">Danger Zone</h3>
-                            <input id="del-u" placeholder="Username to Wipe" class="w-full bg-black p-4 rounded-2xl mb-4 text-white outline-none border border-zinc-800">
-                            <button onclick="nukeUser()" class="w-full bg-red-600/20 text-red-500 font-black py-4 rounded-2xl border border-red-600/50">WIPE ACCOUNT</button>
+                            <input id="del-u" placeholder="Target Username" class="w-full bg-black p-4 rounded-2xl mb-4 text-white outline-none border border-zinc-800">
+                            <button onclick="nukeUser()" class="w-full bg-red-600/20 text-red-500 font-black py-4 rounded-2xl border border-red-600/50 hover:bg-red-600 hover:text-white transition">WIPE ACCOUNT</button>
                         </div>
                     </div>
-                    <div class="bg-zinc-900 p-8 rounded-[2rem] border border-zinc-800"><h3 class="text-xs font-black text-zinc-500 mb-6 uppercase tracking-widest italic">Registered Directory</h3><div id="dir" class="grid grid-cols-1 md:grid-cols-3 gap-4"></div></div>
+                    <div class="bg-zinc-900 p-8 rounded-[2rem] border border-zinc-800"><h3 class="text-xs font-black text-zinc-500 mb-6 uppercase tracking-widest italic">User Directory</h3><div id="dir" class="grid grid-cols-1 md:grid-cols-3 gap-4"></div></div>
                 </div>`;
                 fetchDir();
             }
         };
 
-        // --- MESSAGING LOGIC ---
+        // --- MESSAGING ---
         window.createNewChat = async (type) => {
-            const target = prompt(type === 'dm' ? "Username:" : "Group Name:");
+            const target = prompt(type === 'dm' ? "Enter Target Username:" : "Group Name:");
             if (!target) return;
             let members = [userProfile.username];
             if (type === 'dm') members.push(target.toLowerCase().trim());
             else { 
-                const adds = prompt("Members (comma separated):"); 
+                const adds = prompt("Members (e.g user1, user2):"); 
                 if (adds) adds.split(',').forEach(u => members.push(u.trim().toLowerCase())); 
             }
             const roomId = type === 'dm' ? [userProfile.username, target].sort().join('_') : `group_${Date.now()}`;
@@ -214,7 +287,7 @@
                     const r = d.data();
                     list.innerHTML += `<div onclick="openRoom('${d.id}')" class="p-4 rounded-2xl border ${activeRoomId === d.id ? 'bg-zinc-800 border-blue-500' : 'border-zinc-800/50 hover:bg-zinc-900'} cursor-pointer transition">
                         <p class="text-white font-black text-[11px] uppercase">${r.name}</p>
-                        <p class="text-[9px] text-zinc-600 truncate mt-1">${r.lastMessage}</p>
+                        <p class="text-[9px] text-zinc-600 truncate mt-1 italic">${r.lastMessage}</p>
                     </div>`;
                 });
             });
@@ -230,7 +303,7 @@
                 bubbles.innerHTML = "";
                 snap.forEach(d => {
                     const m = d.data(); const isMe = m.sender === userProfile.username;
-                    bubbles.innerHTML += `<div class="flex flex-col ${isMe ? 'items-end' : 'items-start'}"><span class="text-[8px] font-black text-zinc-600 uppercase mb-1">${m.sender}</span><div class="max-w-[75%] p-4 rounded-3xl text-sm ${isMe ? 'bg-blue-600 text-white rounded-tr-none' : 'bg-zinc-800 text-zinc-200 rounded-tl-none'}">${m.text}</div></div>`;
+                    bubbles.innerHTML += `<div class="flex flex-col ${isMe ? 'items-end' : 'items-start'}"><span class="text-[8px] font-black text-zinc-600 uppercase mb-1 px-2">${m.sender}</span><div class="max-w-[75%] p-4 rounded-3xl text-sm ${isMe ? 'bg-blue-600 text-white rounded-tr-none' : 'bg-zinc-800 text-zinc-200 rounded-tl-none'} shadow-lg">${m.text}</div></div>`;
                 });
                 bubbles.scrollTop = bubbles.scrollHeight;
             });
@@ -245,32 +318,47 @@
             await updateDoc(doc(db, "rooms", activeRoomId), { lastMessage: txt, updatedAt: serverTimestamp() });
         };
 
-        // --- ADMIN ACTIONS ---
+        // --- OWNER ONLY BROADCAST ---
+        window.sendGlobalMsg = async () => {
+            if (userProfile.role !== 'owner') {
+                notify("You do not have permission to broadcast.", "ACCESS DENIED");
+                return;
+            }
+            const m = document.getElementById('sys-msg').value;
+            if(!m) return;
+            await addDoc(collection(db, "broadcasts"), { 
+                message: m, 
+                time: serverTimestamp(),
+                role: userProfile.role,
+                sender: userProfile.username 
+            });
+            document.getElementById('sys-msg').value = "";
+            notify("Announcement pushed to all players.", "SUCCESS");
+        };
+
+        // --- ADMIN FUNCTIONS ---
         window.fetchDir = async () => {
             const d = document.getElementById('dir');
             const s = await getDocs(collection(db, "users"));
             d.innerHTML = "";
-            s.forEach(doc => { const u = doc.data(); d.innerHTML += `<div class="bg-black/50 p-4 rounded-2xl border border-zinc-800"><p class="text-white font-black text-xs uppercase">${u.username}</p><p class="text-[9px] text-zinc-600">${u.role} • ${u.credits} CR</p></div>`; });
-        };
-
-        window.sendGlobalMsg = async () => {
-            const m = document.getElementById('sys-msg').value;
-            if(!m) return;
-            await addDoc(collection(db, "broadcasts"), { message: m, time: serverTimestamp() });
-            alert("Sent.");
+            s.forEach(doc => { const u = doc.data(); d.innerHTML += `<div class="bg-black/50 p-4 rounded-2xl border border-zinc-800"><p class="text-white font-black text-xs uppercase">${u.username}</p><p class="text-[9px] text-zinc-600">${u.role} | ${u.credits} CR</p></div>`; });
         };
 
         window.addGame = async () => {
             const n = document.getElementById('g-n').value;
             const u = document.getElementById('g-u').value;
-            if(!u.startsWith('https')) return alert("HTTPS Only");
+            if(!u.startsWith('https')) { notify("HTTPS Required", "SECURITY"); return; }
             await addDoc(collection(db, "games"), { name: n, url: u });
-            alert("Published.");
+            notify("New game added to the vault.", "GAMES");
         };
 
         window.nukeUser = async () => {
             const u = document.getElementById('del-u').value.trim().toLowerCase();
-            if(confirm(`Nuke ${u}?`)) { await deleteDoc(doc(db, "users", u)); alert("Wiped."); fetchDir(); }
+            if(confirm(`Nuke ${u}?`)) { 
+                await deleteDoc(doc(db, "users", u)); 
+                notify(`${u} has been wiped.`, "MODERATION"); 
+                fetchDir(); 
+            }
         };
     </script>
 </body>
