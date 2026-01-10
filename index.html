@@ -3,18 +3,17 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Trust Games | Official 👑</title>
+    <title>Trust Games | Secure Access 👑</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         body { background-color: #050505; color: #e4e4e7; font-family: 'Inter', sans-serif; overflow: hidden; }
+        #app-shell { display: none; }
         .sidebar-btn { transition: all 0.2s; border-radius: 12px; cursor: pointer; }
         .sidebar-btn:hover { background: #18181b; color: white; }
         iframe { border-radius: 24px; border: 4px solid #18181b; background: #000; height: 500px; width: 100%; }
         .custom-scroll::-webkit-scrollbar { width: 4px; }
         .custom-scroll::-webkit-scrollbar-thumb { background: #27272a; border-radius: 10px; }
-        
-        /* Loading Screen Styles */
-        #loader { background: #050505; position: fixed; inset: 0; z-index: 200; display: flex; items-center; justify-content: center; transition: opacity 0.5s; }
+        #loader { background: #050505; position: fixed; inset: 0; z-index: 200; display: flex; items-center; justify-content: center; }
         .spinner { width: 40px; height: 40px; border: 4px solid #18181b; border-top-color: #3b82f6; border-radius: 50%; animation: spin 0.8s linear infinite; }
         @keyframes spin { to { transform: rotate(360deg); } }
     </style>
@@ -24,23 +23,24 @@
     <div id="loader">
         <div class="flex flex-col items-center gap-4">
             <div class="spinner"></div>
-            <p class="text-[10px] font-black tracking-[0.3em] text-zinc-500 uppercase">Verifying Session</p>
+            <p class="text-[10px] font-black tracking-[0.3em] text-zinc-500 uppercase">Verifying Authorization</p>
         </div>
     </div>
 
-    <div id="auth-overlay" class="fixed inset-0 bg-black/95 backdrop-blur-xl z-[100] flex items-center justify-center hidden">
-        <div class="bg-zinc-900 p-8 rounded-[2.5rem] w-80 border border-zinc-800 shadow-2xl">
-            <h2 class="text-3xl font-black mb-6 text-white text-center italic tracking-tighter uppercase">TRUST GAMES</h2>
+    <div id="auth-overlay" class="fixed inset-0 bg-black z-[100] flex items-center justify-center hidden">
+        <div class="bg-zinc-900 p-8 rounded-[2.5rem] w-80 border border-zinc-800 shadow-2xl text-center">
+            <h2 class="text-3xl font-black mb-2 text-white italic tracking-tighter uppercase">TRUST GAMES</h2>
+            <p class="text-[9px] text-zinc-500 font-bold mb-8 uppercase tracking-widest">Locked Connection</p>
             <div class="space-y-4">
                 <input id="auth-username" type="text" placeholder="Username" class="w-full p-4 bg-black border border-zinc-800 rounded-2xl focus:border-blue-500 outline-none text-sm transition text-white">
                 <input id="auth-pass" type="password" placeholder="Password" class="w-full p-4 bg-black border border-zinc-800 rounded-2xl focus:border-blue-500 outline-none text-sm transition text-white">
-                <button onclick="handleAuth('login')" class="w-full bg-white text-black font-black py-4 rounded-2xl hover:bg-zinc-200 transition shadow-lg">LOGIN</button>
-                <button onclick="handleAuth('register')" class="w-full text-zinc-500 text-[10px] font-bold uppercase tracking-widest hover:text-white transition text-center block">Register New User</button>
+                <button onclick="handleAuth('login')" class="w-full bg-white text-black font-black py-4 rounded-2xl hover:bg-zinc-200 transition">SIGN IN</button>
+                <button onclick="handleAuth('register')" class="w-full text-zinc-500 text-[10px] font-bold uppercase tracking-widest hover:text-white transition block">New Account</button>
             </div>
         </div>
     </div>
 
-    <div class="flex h-screen overflow-hidden">
+    <div id="app-shell" class="flex h-screen overflow-hidden">
         <aside class="w-72 border-r border-zinc-900 bg-zinc-950 p-6 flex flex-col">
             <div class="mb-10 px-2">
                 <h1 class="text-2xl font-black tracking-tighter text-white italic underline decoration-blue-600 decoration-4 underline-offset-4">TRUST GAMES</h1>
@@ -49,24 +49,22 @@
             <nav class="space-y-2 flex-1">
                 <button onclick="showTab('home')" class="sidebar-btn w-full text-left p-4 text-zinc-400 font-bold text-sm">🎮 EXPLORE GAMES</button>
                 <button onclick="showTab('messages')" class="sidebar-btn w-full text-left p-4 text-zinc-400 font-bold text-sm">📩 INBOX</button>
-                
                 <div id="admin-nav" class="hidden pt-6 mt-6 border-t border-zinc-900">
-                    <p class="text-[9px] font-black text-zinc-600 mb-2 px-4 tracking-widest uppercase">Management</p>
-                    <button onclick="showTab('admin')" class="sidebar-btn w-full text-left p-4 text-yellow-500 font-black text-sm">🛠 ADMIN CONTROL</button>
+                    <button onclick="showTab('admin')" class="sidebar-btn w-full text-left p-4 text-yellow-500 font-black text-sm uppercase italic tracking-tighter">🛠 MASTER COMMAND</button>
                 </div>
             </nav>
 
             <div class="mt-auto">
-                <div class="p-5 bg-zinc-900/50 rounded-[2rem] border border-zinc-800/50 mb-4">
-                    <div class="flex items-center gap-3 mb-3">
+                <div class="p-5 bg-zinc-900/50 rounded-[2rem] border border-zinc-800/50 mb-4 text-center">
+                    <div class="flex items-center justify-center gap-2 mb-3">
                         <div id="verified-badge" class="hidden text-blue-400 text-xs">☑️</div>
-                        <p id="user-display" class="text-sm font-black text-white truncate uppercase italic">Guest</p>
+                        <p id="user-display" class="text-sm font-black text-white truncate uppercase italic"></p>
                     </div>
                     <div class="bg-black p-3 rounded-xl border border-zinc-800">
-                        <p id="user-credits" class="text-xs text-yellow-500 font-mono font-bold">0.00 CREDITS</p>
+                        <p id="user-credits" class="text-xs text-yellow-500 font-mono font-bold">0 CREDITS</p>
                     </div>
                 </div>
-                <button onclick="logoutUser()" class="w-full py-3 text-[10px] font-black text-zinc-600 hover:text-red-500 transition uppercase tracking-widest">Sign Out</button>
+                <button onclick="logoutUser()" class="w-full py-3 text-[10px] font-black text-zinc-600 hover:text-red-500 transition uppercase tracking-widest">Destroy Session</button>
             </div>
         </aside>
 
@@ -77,7 +75,7 @@
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
         import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
-        import { getFirestore, doc, setDoc, onSnapshot, collection, addDoc, query, where, getDocs, updateDoc, increment, serverTimestamp, orderBy, limit } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+        import { getFirestore, doc, setDoc, onSnapshot, collection, addDoc, query, where, getDocs, updateDoc, increment, serverTimestamp, orderBy, limit, deleteDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
         const firebaseConfig = {
             apiKey: "AIzaSyDV1Iq9F7N152JjXN7goayLLBiES8B4HkU",
@@ -93,186 +91,142 @@
         const db = getFirestore(app);
         let userProfile = null;
 
-        // --- GATEKEEPER (Checks Cookies/Persistence) ---
+        // --- AUTH GATEKEEPER & BROADCAST ---
         onAuthStateChanged(auth, (user) => {
             const loader = document.getElementById('loader');
             const authOverlay = document.getElementById('auth-overlay');
+            const appShell = document.getElementById('app-shell');
 
             if (!user) {
-                // No session found -> Show Login
-                loader.style.opacity = '0';
-                setTimeout(() => loader.style.display = 'none', 500);
+                appShell.style.display = 'none';
                 authOverlay.classList.remove('hidden');
+                loader.style.display = 'none';
             } else {
-                // Session found! Sync with Database
-                const usernameFromEmail = user.email.split('@')[0];
-                
-                onSnapshot(doc(db, "users", usernameFromEmail), (snap) => {
-                    if (!snap.exists()) {
-                        auth.signOut();
-                        return;
-                    }
-
+                const username = user.email.split('@')[0];
+                onSnapshot(doc(db, "users", username), (snap) => {
+                    if (!snap.exists()) { auth.signOut(); return; }
                     userProfile = snap.data();
-                    if(userProfile.is_banned) {
-                        alert("Banned!");
-                        auth.signOut();
-                        return;
-                    }
+                    if(userProfile.is_banned) { alert("Account Banned."); auth.signOut(); return; }
 
-                    // Update UI
                     document.getElementById('user-display').innerText = userProfile.username;
                     document.getElementById('user-credits').innerText = `${Number(userProfile.credits).toLocaleString()} CREDITS`;
-                    
                     if(userProfile.is_verified) document.getElementById('verified-badge').classList.remove('hidden');
-                    if(userProfile.role === 'owner' || userProfile.role === 'admin') {
-                        document.getElementById('admin-nav').classList.remove('hidden');
-                    }
+                    if(userProfile.role === 'owner' || userProfile.role === 'admin') document.getElementById('admin-nav').classList.remove('hidden');
 
-                    // Remove Loader & Overlay
-                    loader.style.opacity = '0';
-                    setTimeout(() => loader.style.display = 'none', 500);
                     authOverlay.classList.add('hidden');
-                    
+                    loader.style.display = 'none';
+                    appShell.style.display = 'flex';
                     showTab('home');
+                });
+
+                // BROADCAST LISTENER
+                const bQ = query(collection(db, "broadcasts"), orderBy("time", "desc"), limit(1));
+                onSnapshot(bQ, (s) => {
+                    s.docChanges().forEach(c => {
+                        if (c.type === "added") alert(`👑 SYSTEM:\n\n${c.doc.data().message}`);
+                    });
                 });
             }
         });
 
         window.handleAuth = async (type) => {
-            const username = document.getElementById('auth-username').value.trim().toLowerCase();
-            const pass = document.getElementById('auth-pass').value;
-            if(!/^[a-zA-Z0-9_]+$/.test(username)) return alert("Invalid Username");
-            const fakeEmail = `${username}@trustgames.com`;
-
+            const u = document.getElementById('auth-username').value.trim().toLowerCase();
+            const p = document.getElementById('auth-pass').value;
             try {
                 if (type === 'register') {
-                    const res = await createUserWithEmailAndPassword(auth, fakeEmail, pass);
-                    await setDoc(doc(db, "users", username), {
-                        username, credits: 0, role: 'user', is_verified: false, is_banned: false, firebase_uid: res.user.uid
-                    });
+                    const res = await createUserWithEmailAndPassword(auth, `${u}@trustgames.com`, p);
+                    await setDoc(doc(db, "users", u), { username: u, credits: 0, role: 'user', is_verified: false, is_banned: false });
                 } else {
-                    await signInWithEmailAndPassword(auth, fakeEmail, pass);
+                    await signInWithEmailAndPassword(auth, `${u}@trustgames.com`, p);
                 }
-            } catch (err) { alert(err.message); }
+            } catch (err) { 
+                if (err.code === 'auth/email-already-in-use') alert("Username already taken.");
+                else alert(err.message);
+            }
         };
 
-        window.logoutUser = () => {
-            signOut(auth).then(() => location.reload());
-        };
+        window.logoutUser = () => signOut(auth).then(() => location.reload());
 
-        // --- APP TABS ---
-        window.showTab = async (tab) => {
+        window.showTab = async (t) => {
             const main = document.getElementById('content');
-            if (tab === 'home') {
-                main.innerHTML = `<h2 class="text-4xl font-black mb-10 tracking-tighter italic">LOBBY</h2><div id="game-list" class="grid grid-cols-1 gap-12"></div>`;
-                const snap = await getDocs(query(collection(db, "games")));
-                snap.forEach(d => {
+            if (t === 'home') {
+                main.innerHTML = `<h2 class="text-4xl font-black mb-10 italic text-white">THE_VAULT</h2><div id="gl" class="grid grid-cols-1 gap-12"></div>`;
+                const s = await getDocs(query(collection(db, "games")));
+                s.forEach(d => {
                     const g = d.data();
-                    document.getElementById('game-list').innerHTML += `
-                        <div class="bg-zinc-900 rounded-[3rem] p-3 border border-zinc-800 shadow-2xl overflow-hidden">
-                            <iframe src="${g.url}"></iframe>
-                            <div class="p-8 flex justify-between items-center">
-                                <div><h4 class="font-black text-2xl uppercase italic text-white">${g.name}</h4><p class="text-[10px] text-zinc-500 font-bold tracking-[0.3em] uppercase">${g.category}</p></div>
-                                <span class="bg-blue-600/10 text-blue-400 text-[10px] font-black px-5 py-2 rounded-full uppercase italic border border-blue-600/20">${g.visibility}</span>
+                    document.getElementById('gl').innerHTML += `<div class="bg-zinc-900 rounded-[3rem] p-3 border border-zinc-800 shadow-2xl"><iframe src="${g.url}"></iframe><div class="p-8"><h4 class="font-black text-2xl uppercase italic text-white">${g.name}</h4></div></div>`;
+                });
+            }
+
+            if (t === 'admin') {
+                main.innerHTML = `
+                <div class="max-w-6xl mx-auto space-y-8">
+                    <h2 class="text-4xl font-black text-yellow-500 uppercase italic tracking-tighter">Command_Center</h2>
+                    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                        <div class="lg:col-span-2 space-y-6">
+                            <div class="bg-zinc-900 p-8 rounded-[2rem] border border-blue-900/30">
+                                <h3 class="text-xs font-black text-blue-400 mb-4 uppercase">Global Broadcast</h3>
+                                <div class="flex gap-4">
+                                    <input id="sys-msg" placeholder="Broadcast message..." class="flex-1 bg-black p-4 rounded-2xl text-white outline-none">
+                                    <button onclick="sendGlobalMsg()" class="bg-blue-600 px-8 rounded-2xl font-black">PUSH</button>
+                                </div>
                             </div>
-                        </div>`;
-                });
-            }
-
-            if (tab === 'messages') {
-                main.innerHTML = `
-                <div class="max-w-5xl mx-auto h-full flex flex-col">
-                    <h2 class="text-4xl font-black mb-8 italic uppercase">Inbox</h2>
-                    <div class="grid grid-cols-1 md:grid-cols-3 gap-8 flex-1">
-                        <div class="bg-zinc-900 rounded-[2rem] p-8 border border-zinc-800 h-fit">
-                            <input id="m-to" placeholder="To: Username" class="w-full bg-black p-4 rounded-2xl mb-4 border border-zinc-800 outline-none text-white">
-                            <textarea id="m-text" placeholder="Message content..." class="w-full bg-black p-4 rounded-2xl h-40 mb-6 border border-zinc-800 outline-none text-white resize-none"></textarea>
-                            <button onclick="sendMsg()" class="w-full bg-blue-600 text-white font-black py-4 rounded-2xl">SEND MESSAGE</button>
+                            <div class="bg-zinc-900 p-8 rounded-[2rem] border border-zinc-800">
+                                <h3 class="text-xs font-black mb-4 uppercase">Publish Game (HTTPS)</h3>
+                                <input id="g-n" placeholder="Name" class="w-full bg-black p-4 rounded-2xl mb-2 text-white outline-none border border-zinc-800">
+                                <input id="g-u" placeholder="https://..." class="w-full bg-black p-4 rounded-2xl mb-4 text-white outline-none border border-zinc-800">
+                                <button onclick="addGame()" class="w-full bg-white text-black font-black py-4 rounded-2xl">PUBLISH</button>
+                            </div>
                         </div>
-                        <div id="msg-feed" class="md:col-span-2 space-y-4 overflow-y-auto custom-scroll pr-4"></div>
+                        <div class="bg-zinc-900 p-8 rounded-[2rem] border border-red-900/40">
+                            <h3 class="text-xs font-black text-red-500 mb-4 uppercase">Nuke Account</h3>
+                            <input id="del-u" placeholder="Username to Wipe" class="w-full bg-black p-4 rounded-2xl mb-4 text-white outline-none border border-zinc-800">
+                            <button onclick="nukeUser()" class="w-full bg-red-600/20 text-red-500 font-black py-4 rounded-2xl border border-red-600/50">PERMANENT WIPE</button>
+                        </div>
+                    </div>
+                    <div class="bg-zinc-900 p-8 rounded-[2rem] border border-zinc-800">
+                        <h3 class="text-xs font-black text-zinc-500 mb-6 uppercase tracking-widest">Active Directory</h3>
+                        <div id="dir" class="grid grid-cols-1 md:grid-cols-3 gap-4"></div>
                     </div>
                 </div>`;
-                loadMsgs();
-            }
-
-            if (tab === 'admin') {
-                main.innerHTML = `
-                <div class="max-w-4xl space-y-8">
-                    <h2 class="text-4xl font-black text-yellow-500 italic mb-10">ADMIN_PANEL</h2>
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
-                        <div class="bg-zinc-900 p-8 rounded-[2.5rem] border border-zinc-800">
-                            <h3 class="font-black mb-6 uppercase text-sm tracking-widest">Publish Game</h3>
-                            <input id="g-n" placeholder="Game Name" class="w-full bg-black p-4 rounded-2xl mb-3 border border-zinc-800 text-white">
-                            <input id="g-u" placeholder="HTTPS URL" class="w-full bg-black p-4 rounded-2xl mb-6 border border-zinc-800 text-white">
-                            <button onclick="addGame()" class="w-full bg-white text-black font-black py-4 rounded-2xl uppercase">Push Live</button>
-                        </div>
-                        <div class="bg-zinc-900 p-8 rounded-[2.5rem] border border-zinc-800">
-                            <h3 class="font-black mb-6 uppercase text-sm tracking-widest text-yellow-500 text-white">Add Credits</h3>
-                            <input id="c-u" placeholder="Username" class="w-full bg-black p-4 rounded-2xl mb-3 border border-zinc-800 text-white">
-                            <input id="c-a" type="number" placeholder="Amount" class="w-full bg-black p-4 rounded-2xl mb-6 border border-zinc-800 text-white">
-                            <button onclick="giveCredits()" class="w-full bg-yellow-600 text-black font-black py-4 rounded-2xl uppercase">Inject</button>
-                        </div>
-                    </div>
-                    <div class="bg-zinc-900 p-8 rounded-[2.5rem] border border-red-900/20">
-                        <h3 class="font-black mb-6 uppercase text-sm tracking-widest text-red-500">Moderation</h3>
-                        <div class="flex flex-wrap gap-4">
-                            <input id="m-u" placeholder="Username" class="flex-1 min-w-[200px] bg-black p-4 rounded-2xl border border-zinc-800 text-white">
-                            <button onclick="mod('verify')" class="bg-green-600 text-white px-8 rounded-2xl font-black text-xs uppercase">Verify</button>
-                            <button onclick="mod('ban')" class="bg-red-600 text-white px-8 rounded-2xl font-black text-xs uppercase">Ban</button>
-                        </div>
-                    </div>
-                </div>`;
+                fetchDir();
             }
         };
 
-        // --- FUNCTIONS ---
-        window.sendMsg = async () => {
-            const to = document.getElementById('m-to').value.trim().toLowerCase();
-            const text = document.getElementById('m-text').value;
-            if(!to || !text) return;
-            await addDoc(collection(db, "messages"), { from: userProfile.username, to, text, time: serverTimestamp() });
-            alert("Sent!"); document.getElementById('m-text').value = "";
-        };
-
-        function loadMsgs() {
-            const q = query(collection(db, "messages"), where("to", "==", userProfile.username), orderBy("time", "desc"), limit(20));
-            onSnapshot(q, (snap) => {
-                const feed = document.getElementById('msg-feed');
-                feed.innerHTML = "";
-                snap.forEach(d => {
-                    const m = d.data();
-                    feed.innerHTML += `<div class="bg-zinc-900 p-6 rounded-[2rem] border border-zinc-800 shadow-xl">
-                        <p class="text-[10px] font-black text-blue-500 uppercase tracking-widest mb-2 italic">From: ${m.from}</p>
-                        <p class="text-sm text-zinc-200 leading-relaxed">${m.text}</p>
-                    </div>`;
-                });
+        window.fetchDir = async () => {
+            const d = document.getElementById('dir');
+            const s = await getDocs(collection(db, "users"));
+            d.innerHTML = "";
+            s.forEach(doc => {
+                const u = doc.data();
+                d.innerHTML += `<div class="bg-black/50 p-4 rounded-2xl border border-zinc-800">
+                    <p class="text-white font-black text-sm uppercase">${u.username}</p>
+                    <p class="text-[9px] text-zinc-600 uppercase font-bold">${u.role} | ${u.credits} CR</p>
+                </div>`;
             });
-        }
+        };
+
+        window.sendGlobalMsg = async () => {
+            const m = document.getElementById('sys-msg').value;
+            await addDoc(collection(db, "broadcasts"), { message: m, time: serverTimestamp() });
+            alert("Broadcast Active");
+        };
 
         window.addGame = async () => {
-            const name = document.getElementById('g-n').value;
-            const url = document.getElementById('g-u').value;
-            if(!url.startsWith('https://')) return alert("Use HTTPS!");
-            await addDoc(collection(db, "games"), { name, url, visibility: 'public', category: 'Platform' });
-            alert("Success!"); showTab('home');
+            const n = document.getElementById('g-n').value;
+            const u = document.getElementById('g-u').value;
+            await addDoc(collection(db, "games"), { name: n, url: u });
+            alert("Game Live!");
         };
 
-        window.giveCredits = async () => {
-            const username = document.getElementById('c-u').value.trim().toLowerCase();
-            const amt = parseInt(document.getElementById('c-a').value);
-            await updateDoc(doc(db, "users", username), { credits: increment(amt) });
-            alert("Done!");
+        window.nukeUser = async () => {
+            const u = document.getElementById('del-u').value.trim().toLowerCase();
+            if(confirm(`Delete ${u}?`)) {
+                await deleteDoc(doc(db, "users", u));
+                alert("Database record wiped.");
+                fetchDir();
+            }
         };
-
-        window.mod = async (a) => {
-            const username = document.getElementById('m-u').value.trim().toLowerCase();
-            const userRef = doc(db, "users", username);
-            if(a==='ban') await updateDoc(userRef, { is_banned: true });
-            if(a==='verify') await updateDoc(userRef, { is_verified: true });
-            alert("Action Performed!");
-        };
-
     </script>
 </body>
 </html>
