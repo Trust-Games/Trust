@@ -1,1 +1,125 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Trust Games 👑</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        .custom-scroll::-webkit-scrollbar { width: 5px; }
+        .custom-scroll::-webkit-scrollbar-thumb { background: #333; border-radius: 10px; }
+    </style>
+</head>
+<body class="bg-black text-white selection:bg-blue-500">
 
+    <div id="app">
+        <nav class="border-b border-zinc-800 p-4 flex justify-between items-center bg-zinc-950 sticky top-0 z-50">
+            <h1 class="text-xl font-black tracking-tighter">TRUST GAMES 👑</h1>
+            <div id="user-info" class="flex items-center gap-4">
+                <span id="credit-display" class="text-yellow-400 font-mono text-sm"></span>
+                <button id="admin-btn" class="hidden bg-zinc-800 hover:bg-zinc-700 px-3 py-1 rounded text-xs border border-zinc-700">Admin 🛠️</button>
+            </div>
+        </nav>
+
+        <div class="flex items-center gap-4 p-4 overflow-x-auto border-b border-zinc-900 bg-zinc-950">
+            <div class="flex -space-x-2">
+                <div class="w-10 h-10 rounded-full bg-zinc-800 border-2 border-black flex items-center justify-center">⭐</div>
+                <div class="w-10 h-10 rounded-full bg-zinc-800 border-2 border-black flex items-center justify-center">🎮</div>
+            </div>
+            <p class="text-[10px] uppercase tracking-widest text-zinc-500 font-bold">Friends Activity</p>
+        </div>
+
+        <main class="p-6 max-w-6xl mx-auto grid grid-cols-1 lg:grid-cols-3 gap-8">
+            
+            <div class="lg:col-span-2 space-y-6">
+                <div class="bg-zinc-900 rounded-2xl overflow-hidden border border-zinc-800">
+                    <div class="p-4 bg-zinc-800/50 flex justify-between items-center">
+                        <h3 class="font-bold">Now Playing</h3>
+                        <span class="text-xs text-green-400 flex items-center gap-1">● Online</span>
+                    </div>
+                    <iframe src="https://www.google.com/logos/2010/pacman10-i.html" class="w-full h-[450px] bg-black"></iframe>
+                </div>
+            </div>
+
+            <div class="bg-zinc-900 rounded-2xl border border-zinc-800 flex flex-col h-[550px]">
+                <div class="p-4 border-b border-zinc-800 font-bold text-sm uppercase tracking-widest">Global Chat</div>
+                <div id="chat-messages" class="flex-1 p-4 overflow-y-auto space-y-3 custom-scroll text-sm">
+                    </div>
+                <div class="p-4 border-t border-zinc-800">
+                    <input id="chat-input" type="text" placeholder="Send a message..." class="w-full bg-zinc-950 border border-zinc-800 p-3 rounded-xl focus:outline-none focus:border-blue-500 transition-all text-sm">
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+        import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+        import { getFirestore, doc, onSnapshot, collection, query, orderBy, limit, addDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyDV1Iq9F7N152JjXN7goayLLBiES8B4HkU",
+            authDomain: "trust-games-1.firebaseapp.com",
+            projectId: "trust-games-1",
+            storageBucket: "trust-games-1.firebasestorage.app",
+            messagingSenderId: "923318206410",
+            appId: "1:923318206410:web:646cfe42238f9136cb5933",
+            measurementId: "G-NMV7B988BL"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+        const auth = getAuth(app);
+
+        // --- REAL-TIME DATA ---
+        onAuthStateChanged(auth, (user) => {
+            if (user) {
+                // Listen to User Stats (Credits & Roles)
+                onSnapshot(doc(db, "users", user.uid), (doc) => {
+                    const data = doc.data();
+                    if (data) {
+                        document.getElementById('credit-display').innerText = `${Number(data.credits).toLocaleString()} CREDITS`;
+                        if (data.role === 'owner' || data.role === 'admin') {
+                            document.getElementById('admin-btn').classList.remove('hidden');
+                        }
+                    }
+                });
+            } else {
+                // Redirect or show login if you want
+            }
+        });
+
+        // --- CHAT SYSTEM ---
+        const chatInput = document.getElementById('chat-input');
+        const chatMessages = document.getElementById('chat-messages');
+
+        // Send Message
+        chatInput.addEventListener('keypress', async (e) => {
+            if (e.key === 'Enter' && chatInput.value.trim() !== "") {
+                const text = chatInput.value;
+                chatInput.value = "";
+                await addDoc(collection(db, "messages"), {
+                    text: text,
+                    user: auth.currentUser?.displayName || "Guest",
+                    uid: auth.currentUser?.uid,
+                    created_at: serverTimestamp()
+                });
+            }
+        });
+
+        // Receive Messages
+        const q = query(collection(db, "messages"), orderBy("created_at", "asc"), limit(50));
+        onSnapshot(q, (snapshot) => {
+            chatMessages.innerHTML = "";
+            snapshot.forEach((doc) => {
+                const msg = doc.data();
+                const div = document.createElement('div');
+                div.innerHTML = `<span class="text-zinc-500 font-bold">${msg.user}:</span> <span class="text-zinc-200">${msg.text}</span>`;
+                chatMessages.appendChild(div);
+            });
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+        });
+
+    </script>
+</body>
+</html>
