@@ -23,12 +23,9 @@
         #notification-container { position: fixed; bottom: 24px; right: 24px; z-index: 999; display: flex; flex-direction: column-reverse; gap: 12px; pointer-events: none; }
         .toast { background: #18181b; border-left: 4px solid #3b82f6; color: white; padding: 16px; border-radius: 16px; width: 300px; transform: translateX(120%); transition: 0.4s; pointer-events: auto; }
         .toast.show { transform: translateX(0); }
-        .toast.owner-msg { border-left-color: #eab308; background: #1c1917; }
+        .toast.owner-msg { border-left-color: #facc15; background: #1c1917; border-top: 1px solid #444; }
         
         #loader { background: #050505; position: fixed; inset: 0; z-index: 200; display: flex; align-items: center; justify-content: center; }
-        .game-card { background: #0f0f12; border-radius: 2rem; border: 1px solid #1c1c21; padding: 0.75rem; }
-        .iframe-wrapper { position: relative; padding-bottom: 56.25%; height: 0; overflow: hidden; border-radius: 1.5rem; background: #000; }
-        .iframe-wrapper iframe { position: absolute; top: 0; left: 0; width: 100%; height: 100%; border: none; }
     </style>
 </head>
 <body>
@@ -46,7 +43,7 @@
     <div id="auth-overlay" class="fixed inset-0 bg-black z-[100] flex items-center justify-center p-6 hidden">
         <div class="bg-zinc-900 p-10 rounded-[2.5rem] w-full max-w-md border border-zinc-800 text-center shadow-2xl">
             <h2 class="text-3xl font-bold mb-2 text-white italic tracking-tighter uppercase">Trust Games</h2>
-            <p class="text-xs text-zinc-500 mb-8 uppercase tracking-widest">Authorized Access Only</p>
+            <p class="text-xs text-zinc-500 mb-8 uppercase tracking-widest text-center">Authorized Access Only</p>
             <div class="space-y-4">
                 <input id="auth-username" type="text" placeholder="Username" class="w-full p-4 bg-black border border-zinc-800 rounded-2xl outline-none text-white focus:border-blue-500 transition">
                 <input id="auth-pass" type="password" placeholder="Password" class="w-full p-4 bg-black border border-zinc-800 rounded-2xl outline-none text-white focus:border-blue-500 transition">
@@ -78,7 +75,7 @@
                 </div>
             </nav>
             <div class="p-4">
-                <div class="bg-zinc-900 p-4 rounded-3xl border border-zinc-800 text-center user-card-content">
+                <div class="bg-zinc-900 p-4 rounded-3xl border border-zinc-800 text-center">
                     <p id="user-display" class="text-xs font-bold text-white truncate"></p>
                     <div id="verified-icon" class="hidden text-blue-400 text-[10px] font-bold mt-1 uppercase">Verified</div>
                     <p id="user-credits" class="text-[11px] text-yellow-500 font-mono mt-1">0 Credits</p>
@@ -118,7 +115,6 @@
         const db = getFirestore(app);
         let userProfile = null;
 
-        // AUTH LISTENER
         onAuthStateChanged(auth, async (user) => {
             if (!user) {
                 document.getElementById('app-shell').style.display = 'none';
@@ -134,10 +130,7 @@
                     document.getElementById('user-display').innerText = userProfile.username;
                     document.getElementById('user-credits').innerText = `${userProfile.credits} Credits`;
                     document.getElementById('verified-icon').style.display = userProfile.is_verified ? 'block' : 'none';
-                    
-                    if(userProfile.role === 'owner' || userProfile.role === 'admin') {
-                        document.getElementById('admin-nav').classList.remove('hidden');
-                    }
+                    if(userProfile.role === 'owner' || userProfile.role === 'admin') document.getElementById('admin-nav').classList.remove('hidden');
                     
                     document.getElementById('auth-overlay').classList.add('hidden');
                     document.getElementById('loader').style.display = 'none';
@@ -145,7 +138,6 @@
                     showTab('home');
                 });
 
-                // Global Announcement Listener
                 const bQ = query(collection(db, "broadcasts"), orderBy("time", "desc"), limit(1));
                 onSnapshot(bQ, (s) => s.docChanges().forEach(c => { 
                     if (c.type === "added" && c.doc.data().time) {
@@ -156,7 +148,6 @@
             }
         });
 
-        // AUTH FUNCTIONS
         window.handleAuth = async (type) => {
             const u = document.getElementById('auth-username').value.trim().toLowerCase();
             const p = document.getElementById('auth-pass').value;
@@ -164,12 +155,8 @@
             try {
                 if (type === 'register') {
                     await createUserWithEmailAndPassword(auth, `${u}@trustgames.com`, p);
-                    await setDoc(doc(db, "users", u), { 
-                        username: u, credits: 0, role: 'user', is_verified: false, is_banned: false, createdAt: serverTimestamp() 
-                    });
-                } else {
-                    await signInWithEmailAndPassword(auth, `${u}@trustgames.com`, p);
-                }
+                    await setDoc(doc(db, "users", u), { username: u, credits: 0, role: 'user', is_verified: false, is_banned: false, createdAt: serverTimestamp() });
+                } else await signInWithEmailAndPassword(auth, `${u}@trustgames.com`, p);
             } catch (err) { notify(err.message, "Login Failed"); }
         };
 
@@ -182,15 +169,12 @@
             toast.innerHTML = `<p class="text-[10px] font-bold text-zinc-500 uppercase mb-1">${title}</p><p class="text-sm font-semibold">${msg}</p>`;
             container.appendChild(toast);
             setTimeout(() => toast.classList.add('show'), 100);
-            setTimeout(() => { toast.classList.remove('show'); setTimeout(() => toast.remove(), 500); }, 7000);
+            setTimeout(() => { toast.classList.remove('show'); setTimeout(() => toast.remove(), 500); }, 6000);
         };
 
-        // UI TABS
         window.showTab = (t) => {
             const main = document.getElementById('content');
-            if (t === 'home') {
-                main.innerHTML = `<h2 class="text-2xl font-bold mb-8 italic uppercase tracking-tighter">Games</h2><div id="gl" class="grid grid-cols-1 lg:grid-cols-2 gap-8"></div>`;
-            }
+            if (t === 'home') main.innerHTML = `<h2 class="text-2xl font-bold mb-8 italic uppercase">Games</h2><div id="gl" class="grid grid-cols-1 lg:grid-cols-2 gap-8"></div>`;
             if (t === 'admin') {
                 main.innerHTML = `
                 <div class="max-w-4xl space-y-8">
@@ -202,12 +186,12 @@
                             <button onclick="sendAnnounce()" class="w-full bg-yellow-500 text-black font-bold py-3 rounded-xl">Post Announcement</button>
                         </div>
                         <div class="bg-zinc-900 p-8 rounded-[2rem] border border-zinc-800">
-                            <h3 class="text-xs font-bold text-blue-400 mb-4 uppercase">User Management</h3>
+                            <h3 class="text-xs font-bold text-blue-400 mb-4 uppercase">User Control</h3>
                             <input id="mod-u" placeholder="Username" class="w-full bg-black border border-zinc-800 p-4 rounded-xl mb-4 text-white">
                             <div class="grid grid-cols-2 gap-2">
                                 <button onclick="modUser('verify', true)" class="bg-blue-600/20 text-blue-400 p-3 rounded-xl text-xs font-bold">Verify</button>
-                                <button onclick="modUser('verify', false)" class="bg-red-600/10 text-red-500 border border-red-500/30 p-3 rounded-xl text-xs font-bold">Unverify</button>
-                                <button onclick="modUser('ban', true)" class="bg-red-600 text-white p-3 rounded-xl text-xs font-bold">Ban</button>
+                                <button onclick="modUser('verify', false)" class="bg-red-600 text-white p-3 rounded-xl text-xs font-bold">Unverify</button>
+                                <button onclick="modUser('ban', true)" class="bg-red-900 text-white p-3 rounded-xl text-xs font-bold">Ban</button>
                                 <button onclick="modUser('ban', false)" class="bg-green-600 text-white p-3 rounded-xl text-xs font-bold">Unban</button>
                             </div>
                         </div>
@@ -216,45 +200,32 @@
             }
         };
 
-        // ADMIN LOGIC
         window.sendAnnounce = async () => {
-            if (!userProfile || userProfile.role !== 'owner') {
-                notify("Your role is not set to 'owner' in the database.", "Error");
-                return;
-            }
+            if (userProfile.role !== 'owner') { notify("Requires Owner Role", "Denied"); return; }
             const m = document.getElementById('ann-msg').value.trim();
             if(!m) return;
             try {
-                await addDoc(collection(db, "broadcasts"), { 
-                    message: m, role: 'owner', time: serverTimestamp() 
-                });
+                await addDoc(collection(db, "broadcasts"), { message: m, role: 'owner', time: serverTimestamp() });
                 document.getElementById('ann-msg').value = "";
                 notify("Announcement Sent");
-            } catch (e) {
-                console.error(e);
-                notify("Check your Firebase Database Rules.", "Database Error");
-            }
+            } catch (e) { notify("Database Error: Check Rules", "Error"); }
         };
 
         window.modUser = async (action, value) => {
-            const target = document.getElementById('mod-u').value.trim().toLowerCase();
-            if(!target) return;
-            const ref = doc(db, "users", target);
+            const u = document.getElementById('mod-u').value.trim().toLowerCase();
+            if(!u) return;
+            const ref = doc(db, "users", u);
             try {
                 if(action === 'verify') await updateDoc(ref, { is_verified: value });
                 if(action === 'ban') await updateDoc(ref, { is_banned: value });
-                notify(`${target} has been updated.`);
-            } catch (e) { notify("User not found."); }
+                notify(`${u} updated`);
+            } catch (e) { notify("User not found"); }
         };
 
         window.toggleSidebar = () => {
             const sb = document.getElementById('sidebar');
-            if (window.innerWidth <= 768) { 
-                sb.classList.toggle('mobile-open'); 
-                document.getElementById('content-overlay').classList.toggle('active'); 
-            } else {
-                sb.classList.toggle('minimized');
-            }
+            if (window.innerWidth <= 768) { sb.classList.toggle('mobile-open'); document.getElementById('content-overlay').classList.toggle('active'); }
+            else sb.classList.toggle('minimized');
         };
     </script>
 </body>
