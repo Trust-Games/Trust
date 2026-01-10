@@ -1,43 +1,40 @@
 import React, { useState } from 'react';
 
-function TrustGames() {
-  const [view, setView] = useState('home'); // home, admin, chat
+export default function TrustGames() {
+  const [page, setPage] = useState('home');
+  const [currentUser, setUser] = useState({ id: 1, role: 'owner', credits: 5000 });
 
   return (
-    <div style={{ fontFamily: 'sans-serif', backgroundColor: '#1a1a1a', color: 'white', minHeight: '100vh' }}>
-      {/* Header */}
-      <nav style={{ padding: '20px', borderBottom: '1px solid #333', display: 'flex', justifyContent: 'space-between' }}>
-        <h2 onClick={() => setView('home')}>Trust Games 👑</h2>
-        <div>
-          <button onClick={() => setView('home')}>Games</button>
-          <button onClick={() => setView('admin')}>Admin Panel 🛠️</button>
-        </div>
+    <div style={{ background: '#000', color: '#fff', minHeight: '100vh', fontFamily: 'sans-serif' }}>
+      {/* HEADER */}
+      <nav style={{ display: 'flex', padding: '15px', borderBottom: '1px solid #222' }}>
+        <h2 style={{ flex: 1 }}>Trust Games 👑</h2>
+        <input placeholder="Search users/games..." style={{ background: '#222', border: 'none', color: '#fff', padding: '10px', borderRadius: '5px' }} />
+        {currentUser.role === 'owner' && <button onClick={() => setPage('admin')}>🛠️ Admin</button>}
       </nav>
 
-      {/* Main Content */}
-      <div style={{ padding: '20px' }}>
-        {view === 'home' && (
-          <div>
-            <h3>Featured Games</h3>
-            <div style={{ width: '100%', height: '400px', backgroundColor: '#333', borderRadius: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-               <p>Game Embed Loading... (URL goes here)</p>
-            </div>
-          </div>
-        )}
-
-        {view === 'admin' && (
-          <div style={{ backgroundColor: '#222', padding: '20px', borderRadius: '10px' }}>
-            <h3>Admin Dashboard</h3>
-            <p>Total Users: 1</p>
-            <hr />
-            <h4>Management</h4>
-            <button style={{ backgroundColor: 'gold', color: 'black' }}>Give Credits to All</button>
-            <button style={{ backgroundColor: 'red', color: 'white', marginLeft: '10px' }}>Ban User</button>
-          </div>
-        )}
+      {/* FRIENDS BAR */}
+      <div style={{ display: 'flex', gap: '10px', padding: '10px', background: '#111' }}>
+        <div style={{ border: '2px solid gold', borderRadius: '50%', padding: '5px' }}>Friend 1 (In-Game)</div>
       </div>
+
+      {/* MAIN CONTENT */}
+      <main style={{ padding: '20px' }}>
+        {page === 'home' ? (
+          <div>
+             <h3>Verified Games</h3>
+             <iframe src="https://example-game-url.com" width="100%" height="500px" title="Game" />
+          </div>
+        ) : (
+          <div style={{ background: '#111', padding: '20px' }}>
+            <h1>Admin Panel</h1>
+            <button onClick={() => alert('Granting Credits...')}>Give Credits to All</button>
+            <hr />
+            <input placeholder="Enter Username to Ban" />
+            <textarea placeholder="Ban Reason" />
+          </div>
+        )}
+      </main>
     </div>
   );
 }
-
-export default TrustGames;
