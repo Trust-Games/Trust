@@ -3,88 +3,95 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Trust Games | Verified Edition</title>
+    <title>Trust Games | Solid State</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         body { background-color: #050505; color: #e4e4e7; font-family: sans-serif; overflow: hidden; }
         #app-shell { display: none; height: 100vh; width: 100vw; }
+        
+        /* Sidebar Left Logic */
         .sidebar { 
             width: 260px; background: #09090b; border-right: 1px solid #18181b; 
-            display: flex; flex-direction: column; transition: transform 0.3s ease;
+            display: flex; flex-direction: column; transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
             position: fixed; inset-y: 0; left: 0; z-index: 4000;
         }
         .sidebar.collapsed { transform: translateX(-100%); }
-        main { margin-left: 260px; transition: margin-left 0.3s ease; }
-        main.full { margin-left: 0; }
+        main { margin-left: 260px; transition: margin-left 0.3s ease; width: calc(100% - 260px); }
+        main.full { margin-left: 0; width: 100%; }
 
-        .tab-btn { width: 100%; padding: 15px; text-align: left; color: #a1a1aa; font-size: 13px; font-weight: 700; text-transform: uppercase; border-left: 3px solid transparent; }
-        .tab-btn.active { color: #3b82f6; background: #111113; border-left: 3px solid #3b82f6; }
+        .tab-btn { width: 100%; padding: 16px; text-align: left; color: #a1a1aa; font-size: 12px; font-weight: 800; text-transform: uppercase; border-left: 4px solid transparent; transition: 0.2s; }
+        .tab-btn.active { color: #3b82f6; background: #111113; border-left-color: #3b82f6; }
         
-        .modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.95); z-index: 5000; align-items: center; justify-content: center; padding: 15px; }
-        .admin-input { background: #000; border: 1px solid #27272a; padding: 12px; border-radius: 12px; width: 100%; font-size: 13px; color: white; outline: none; margin-bottom: 10px; }
+        .modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.98); z-index: 5000; align-items: center; justify-content: center; padding: 20px; }
+        .admin-input { background: #000; border: 1px solid #27272a; padding: 14px; border-radius: 14px; width: 100%; font-size: 13px; color: white; outline: none; margin-bottom: 12px; }
         
-        .btn-toggle { flex: 1; padding: 12px 0; border-radius: 12px; font-weight: 800; font-size: 10px; text-transform: uppercase; border: 1px solid #27272a; transition: 0.2s; }
-        .btn-active-blue { background: #3b82f6; color: white; border-color: #3b82f6; }
-        .btn-active-red { background: #ef4444; color: white; border-color: #ef4444; }
+        /* Fixed Admin Toggles */
+        .admin-toggle-row { display: flex; gap: 10px; margin-bottom: 15px; }
+        .tgl-btn { flex: 1; padding: 12px; border-radius: 12px; font-size: 10px; font-weight: 900; text-transform: uppercase; border: 1px solid #27272a; transition: 0.3s; }
+        .tgl-on-blue { background: #3b82f6; color: white; border-color: #3b82f6; box-shadow: 0 0 15px rgba(59,130,246,0.3); }
+        .tgl-on-red { background: #ef4444; color: white; border-color: #ef4444; box-shadow: 0 0 15px rgba(239,68,68,0.3); }
 
-        #menu-toggle { position: fixed; bottom: 20px; right: 20px; z-index: 4500; }
-        .verified-tick { color: #10b981; margin-left: 4px; }
+        #menu-trigger { position: fixed; top: 15px; left: 15px; z-index: 4500; display: none; }
+        @media (max-width: 1024px) { #menu-trigger { display: block; } main { margin-left: 0; width: 100%; } }
+        
+        .verified-tick { color: #10b981; margin-left: 6px; font-size: 0.9em; }
     </style>
 </head>
 <body>
 
-    <div id="loader" class="fixed inset-0 bg-black z-[7000] flex items-center justify-center font-bold text-blue-500">APPLYING VERIFICATION...</div>
+    <div id="loader" class="fixed inset-0 bg-black z-[7000] flex items-center justify-center font-black text-blue-500 italic tracking-widest">STABILIZING SYSTEM...</div>
 
-    <button id="menu-toggle" onclick="toggleSidebar()" class="bg-blue-600 w-14 h-14 rounded-full shadow-2xl flex items-center justify-center text-white font-bold text-xl">☰</button>
+    <button id="menu-trigger" onclick="toggleSidebar()" class="bg-zinc-900 border border-zinc-800 w-12 h-12 rounded-2xl flex items-center justify-center text-white text-xl">☰</button>
 
     <div id="profile-modal" class="modal" onclick="this.style.display='none'">
-        <div class="bg-[#0c0c0e] p-8 rounded-[2.5rem] w-full max-w-md border border-[#27272a] relative" onclick="event.stopPropagation()">
-            <div class="text-center mb-6">
-                <p id="p-credits" class="text-5xl font-black text-yellow-500 mb-1">0</p>
-                <h2 id="p-name" class="text-2xl font-black italic uppercase text-white flex items-center justify-center">User</h2>
+        <div class="bg-[#09090b] p-8 rounded-[2.5rem] w-full max-w-md border border-zinc-800 shadow-2xl" onclick="event.stopPropagation()">
+            <div class="text-center mb-8">
+                <p id="p-credits" class="text-5xl font-black text-yellow-500 mb-2">0</p>
+                <h2 id="p-name" class="text-2xl font-black italic uppercase text-white flex items-center justify-center"></h2>
             </div>
 
-            <div id="admin-controls" class="hidden border-t border-zinc-800 pt-6 mt-4">
+            <div id="admin-controls" class="hidden border-t border-zinc-800 pt-6 mt-2">
+                <p class="text-[9px] text-blue-500 font-black mb-4 tracking-widest uppercase">Admin Management</p>
                 <input id="edit-u" placeholder="Username" class="admin-input">
                 <input id="edit-c" type="number" placeholder="Credits" class="admin-input">
                 <select id="edit-r" class="admin-input">
-                    <option value="user">User</option>
-                    <option value="admin">Admin</option>
-                    <option value="owner">Owner</option>
+                    <option value="user">USER</option>
+                    <option value="admin">ADMIN</option>
+                    <option value="owner">OWNER</option>
                 </select>
-                <div class="flex gap-2 mb-4">
-                    <button id="adm-ban-btn" onclick="toggleAdminState('ban')" class="btn-toggle">Ban</button>
-                    <button id="adm-ver-btn" onclick="toggleAdminState('ver')" class="btn-toggle">Verify</button>
+                <div class="admin-toggle-row">
+                    <button id="adm-ban-btn" onclick="toggleAdminVar('ban')" class="tgl-btn">Banned</button>
+                    <button id="adm-ver-btn" onclick="toggleAdminVar('ver')" class="tgl-btn">Verified</button>
                 </div>
-                <button id="save-btn" onclick="commitAdminUpdate()" class="w-full bg-white text-black py-4 rounded-2xl font-black uppercase text-xs hover:bg-blue-600 hover:text-white transition">Save Changes</button>
+                <button id="save-btn" onclick="execAdminCommit()" class="w-full bg-blue-600 text-white py-4 rounded-2xl font-black uppercase text-xs hover:bg-blue-500 transition">Save User Data</button>
             </div>
             
-            <div class="flex gap-2 mt-6">
+            <div class="flex gap-3 mt-6">
                 <button id="p-follow-btn" class="flex-1 py-4 rounded-2xl font-black uppercase text-xs"></button>
-                <button onclick="directMessage()" class="flex-1 py-4 rounded-2xl font-black uppercase text-xs bg-zinc-800 text-white">Message</button>
+                <button onclick="initChatSequence()" class="flex-1 py-4 rounded-2xl font-black uppercase text-xs bg-white text-black">Message</button>
             </div>
         </div>
     </div>
 
     <div id="app-shell" class="flex h-screen">
         <aside id="main-sidebar" class="sidebar">
-            <div class="p-6 text-2xl font-black italic text-white">TRUST</div>
-            <nav class="flex-1 px-2 space-y-1">
-                <button onclick="navTo('home')" id="btn-home" class="tab-btn active">🎮 Vault</button>
-                <button onclick="navTo('social')" id="btn-social" class="tab-btn">💬 Chats</button>
-                <button onclick="navTo('friends')" id="btn-friends" class="tab-btn">👥 Friends</button>
-                <div id="admin-nav" class="hidden"><button onclick="navTo('admin')" id="btn-admin" class="tab-btn text-yellow-500">🛠 Control</button></div>
+            <div class="p-8 text-3xl font-black italic text-white tracking-tighter">TRUST</div>
+            <nav class="flex-1 px-3 space-y-1">
+                <button onclick="navTo('home')" id="btn-home" class="tab-btn active">🎮 Games</button>
+                <button onclick="navTo('social')" id="btn-social" class="tab-btn">💬 Social</button>
+                <button onclick="navTo('friends')" id="btn-friends" class="tab-btn">👥 Circle</button>
+                <div id="admin-nav" class="hidden"><button onclick="navTo('admin')" id="btn-admin" class="tab-btn text-yellow-500">🛠 Admin</button></div>
             </nav>
-            <div class="p-4 border-t border-zinc-800 bg-zinc-950">
-                <p id="my-name" class="font-black text-sm text-white truncate flex items-center"></p>
-                <p id="my-credits" class="text-yellow-500 text-[10px] font-bold"></p>
-                <button onclick="signOut(auth)" class="mt-2 text-[9px] text-zinc-600 font-bold uppercase">Sign Out</button>
+            <div class="p-6 border-t border-zinc-900 bg-black/40">
+                <p id="my-name" class="font-black text-sm text-white flex items-center"></p>
+                <p id="my-credits" class="text-yellow-500 text-[10px] font-mono mt-1"></p>
+                <button onclick="signOut(auth)" class="mt-4 text-[9px] text-zinc-700 font-bold uppercase hover:text-red-500">Log Out</button>
             </div>
         </aside>
 
         <main id="main-body" class="flex-1 flex flex-col">
-            <header class="p-4 border-b border-zinc-900 bg-[#050505]">
-                <input id="search-bar" oninput="doSearch()" type="text" placeholder="Search Players..." class="w-full max-w-md bg-zinc-900 p-4 rounded-2xl border border-zinc-800 outline-none text-sm font-bold">
+            <header class="p-5 border-b border-zinc-900 bg-[#050505] flex items-center justify-end">
+                <input id="search-bar" oninput="doSearch()" type="text" placeholder="Find players..." class="w-full max-w-xs bg-zinc-900/50 p-4 rounded-2xl border border-zinc-800 outline-none text-xs font-bold focus:border-blue-600 transition-all">
             </header>
             <div id="main-content" class="flex-1 p-6 overflow-y-auto"></div>
         </main>
@@ -100,11 +107,11 @@
         const auth = getAuth(app);
         const db = getFirestore(app);
 
-        let myData = null, viewingUser = null, curBan = false, curVer = false;
+        let myData = null, viewingUser = null, tempBan = false, tempVer = false, activeChat = null;
 
         onAuthStateChanged(auth, (user) => {
             if (user) {
-                const uName = user.email.split('@')[0];
+                const uName = user.email.split('@')[0].toLowerCase();
                 onSnapshot(doc(db, "users", uName), (snap) => {
                     if(!snap.exists()) return;
                     myData = snap.data();
@@ -119,8 +126,10 @@
         });
 
         window.toggleSidebar = () => {
-            document.getElementById('main-sidebar').classList.toggle('collapsed');
-            document.getElementById('main-body').classList.toggle('full');
+            const sb = document.getElementById('main-sidebar');
+            const mb = document.getElementById('main-body');
+            sb.classList.toggle('collapsed');
+            mb.classList.toggle('full');
         };
 
         window.navTo = (t) => {
@@ -128,70 +137,152 @@
             if(window.innerWidth < 1024) toggleSidebar();
         };
 
-        window.openProfile = async (username) => {
-            const snap = await getDoc(doc(db, "users", username));
-            if(!snap.exists()) return;
-            viewingUser = snap.data();
+        window.openProfile = async (u) => {
+            const s = await getDoc(doc(db, "users", u.toLowerCase()));
+            if(!s.exists()) return;
+            viewingUser = s.data();
             
             document.getElementById('p-name').innerHTML = `${viewingUser.username}${viewingUser.is_verified ? '<span class="verified-tick">✅</span>' : ''}`;
             document.getElementById('p-credits').innerText = viewingUser.credits.toLocaleString();
             
-            curBan = viewingUser.is_banned || false;
-            curVer = viewingUser.is_verified || false;
+            tempBan = viewingUser.is_banned || false;
+            tempVer = viewingUser.is_verified || false;
 
             if(['owner','admin'].includes(myData.role)) {
                 document.getElementById('admin-controls').classList.remove('hidden');
                 document.getElementById('edit-u').value = viewingUser.username;
                 document.getElementById('edit-c').value = viewingUser.credits;
                 document.getElementById('edit-r').value = viewingUser.role;
-                updateAdminVisuals();
-            } else {
-                document.getElementById('admin-controls').classList.add('hidden');
-            }
+                syncAdminUI();
+            } else { document.getElementById('admin-controls').classList.add('hidden'); }
 
-            const isF = myData.following?.includes(username);
-            const btn = document.getElementById('p-follow-btn');
-            btn.innerText = isF ? 'Unfollow' : 'Follow';
-            btn.className = `flex-1 py-4 rounded-2xl font-black uppercase text-xs ${isF ? 'bg-zinc-800 text-zinc-500' : 'bg-blue-600 text-white'}`;
-            btn.onclick = () => toggleFollow(username, isF);
+            const isF = myData.following?.includes(u.toLowerCase());
+            const b = document.getElementById('p-follow-btn');
+            b.innerText = isF ? 'Unfollow' : 'Follow';
+            b.className = `flex-1 py-4 rounded-2xl font-black uppercase text-[10px] ${isF ? 'bg-zinc-900 text-zinc-500' : 'bg-blue-600 text-white'}`;
+            b.onclick = () => toggleFollowAction(u.toLowerCase(), isF);
 
             document.getElementById('profile-modal').style.display = 'flex';
         };
 
-        window.toggleAdminState = (type) => {
-            if(type === 'ban') curBan = !curBan;
-            if(type === 'ver') curVer = !curVer;
-            updateAdminVisuals();
+        window.toggleAdminVar = (type) => {
+            if(type === 'ban') tempBan = !tempBan;
+            if(type === 'ver') tempVer = !tempVer;
+            syncAdminUI();
         };
 
-        function updateAdminVisuals() {
-            const bBtn = document.getElementById('adm-ban-btn');
-            const vBtn = document.getElementById('adm-ver-btn');
-            bBtn.className = `btn-toggle ${curBan ? 'btn-active-red' : 'text-zinc-500'}`;
-            vBtn.className = `btn-toggle ${curVer ? 'btn-active-blue' : 'text-zinc-500'}`;
+        function syncAdminUI() {
+            const b = document.getElementById('adm-ban-btn');
+            const v = document.getElementById('adm-ver-btn');
+            b.className = `tgl-btn ${tempBan ? 'tgl-on-red' : 'text-zinc-600'}`;
+            v.className = `tgl-btn ${tempVer ? 'tgl-on-blue' : 'text-zinc-600'}`;
+            b.innerText = tempBan ? "BANNED: YES" : "BANNED: NO";
+            v.innerText = tempVer ? "VERIFIED: YES" : "VERIFIED: NO";
         }
 
-        window.commitAdminUpdate = async () => {
+        window.execAdminCommit = async () => {
             const btn = document.getElementById('save-btn');
-            btn.innerText = "SAVING...";
+            btn.innerText = "UPDATING...";
+            const targetID = viewingUser.username.toLowerCase();
             const newName = document.getElementById('edit-u').value.toLowerCase();
-            const updates = {
+            
+            const payload = {
                 username: newName,
                 credits: parseInt(document.getElementById('edit-c').value),
                 role: document.getElementById('edit-r').value,
-                is_banned: curBan,
-                is_verified: curVer
+                is_banned: tempBan,
+                is_verified: tempVer
             };
 
-            if(newName !== viewingUser.username) {
-                await setDoc(doc(db, "users", newName), { ...viewingUser, ...updates });
-                await deleteDoc(doc(db, "users", viewingUser.username));
-            } else {
-                await updateDoc(doc(db, "users", viewingUser.username), updates);
+            try {
+                if(newName !== targetID) {
+                    await setDoc(doc(db, "users", newName), { ...viewingUser, ...payload });
+                    await deleteDoc(doc(db, "users", targetID));
+                } else {
+                    await updateDoc(doc(db, "users", targetID), payload);
+                }
+                document.getElementById('profile-modal').style.display = 'none';
+                alert("Database Updated");
+            } catch (e) { alert("Error: " + e.message); }
+            btn.innerText = "Save User Data";
+        };
+
+        window.initChatSequence = async () => {
+            const participants = [myData.username.toLowerCase(), viewingUser.username.toLowerCase()].sort();
+            const chatID = `${participants[0]}_${participants[1]}`;
+            
+            const chatRef = doc(db, "chats", chatID);
+            const snap = await getDoc(chatRef);
+            if(!snap.exists()) {
+                await setDoc(chatRef, { members: participants, isGroup: false, lastActive: serverTimestamp() });
+            }
+            document.getElementById('profile-modal').style.display = 'none';
+            navTo('social');
+            setTimeout(() => launchChat(chatID), 500);
+        };
+
+        window.launchChat = (id) => {
+            activeChat = id;
+            const win = document.getElementById('chat-win');
+            onSnapshot(query(collection(db, "chats", id, "messages"), orderBy("time", "asc")), s => {
+                if(!win) return; win.innerHTML = "";
+                s.forEach(d => {
+                    const m = d.data(); const isMe = m.sender === myData.username.toLowerCase();
+                    win.innerHTML += `<div class="p-3 px-4 rounded-2xl max-w-[80%] text-sm font-bold ${isMe ? 'bg-blue-600 self-end text-white' : 'bg-zinc-800 self-start text-zinc-300'}">${m.text}</div>`;
+                });
+                win.scrollTop = win.scrollHeight;
+            });
+        };
+
+        window.sendChatMessage = async () => {
+            const input = document.getElementById('msg-in');
+            const txt = input.value.trim();
+            if(!txt || !activeChat) return;
+            await addDoc(collection(db, "chats", activeChat, "messages"), {
+                text: txt,
+                sender: myData.username.toLowerCase(),
+                time: serverTimestamp()
+            });
+            input.value = "";
+        };
+
+        window.showTab = async (t) => {
+            const main = document.getElementById('main-content');
+            main.innerHTML = `<p class="animate-pulse text-zinc-800 font-black">FETCHING...</p>`;
+            document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+            if(document.getElementById('btn-'+t)) document.getElementById('btn-'+t).classList.add('active');
+
+            if(t === 'social') {
+                main.innerHTML = `<div class="flex h-[82vh] bg-zinc-900/20 rounded-[2.5rem] border border-zinc-800/50 overflow-hidden shadow-2xl">
+                    <div id="chat-list" class="w-1/3 border-r border-zinc-800 p-4 space-y-2 overflow-y-auto bg-black/20"></div>
+                    <div class="flex-1 flex flex-col">
+                        <div id="chat-win" class="flex-1 p-6 overflow-y-auto flex flex-col space-y-4"></div>
+                        <div class="p-4 bg-black/40 flex gap-3 border-t border-zinc-800">
+                            <input id="msg-in" placeholder="Write a message..." class="flex-1 bg-zinc-900 p-4 rounded-2xl outline-none border border-zinc-800 text-sm font-bold focus:border-blue-600 transition">
+                            <button onclick="sendChatMessage()" class="bg-blue-600 px-10 rounded-2xl font-black text-xs uppercase shadow-lg shadow-blue-900/20">Send</button>
+                        </div>
+                    </div>
+                </div>`;
+                onSnapshot(query(collection(db, "chats"), where("members", "array-contains", myData.username.toLowerCase())), s => {
+                    const l = document.getElementById('chat-list'); if(!l) return; l.innerHTML = "";
+                    s.forEach(d => {
+                        const other = d.data().members.find(m => m !== myData.username.toLowerCase());
+                        l.innerHTML += `<div onclick="launchChat('${d.id}')" class="p-4 bg-zinc-900/50 rounded-2xl border border-zinc-800 cursor-pointer hover:bg-blue-600/10 hover:border-blue-600/50 transition font-black text-[10px] uppercase text-zinc-400">${other}</div>`;
+                    });
+                });
             }
             
-            document.getElementById('profile-modal').style.display = 'none';
-            btn.innerText = "SAVE CHANGES";
+            if(t === 'home') {
+                main.innerHTML = `<div id="s-zone" class="mb-10 hidden"></div><div id="g-grid" class="grid grid-cols-1 md:grid-cols-3 gap-6"></div>`;
+                const snap = await getDocs(collection(db, "games"));
+                snap.forEach(d => {
+                    const g = d.data();
+                    main.querySelector('#g-grid').innerHTML += `<div onclick="window.open('${g.url}')" class="bg-zinc-900 rounded-[2.5rem] border border-zinc-800 p-6 cursor-pointer hover:border-blue-600 transition group">
+                        <div class="h-32 bg-zinc-800 rounded-2xl mb-4 flex items-center justify-center text-4xl group-hover:scale-95 transition">🎮</div>
+                        <p class="font-black italic uppercase text-white tracking-widest text-center">${g.name}</p>
+                    </div>`;
+                });
+            }
         };
 
         window.doSearch = async () => {
@@ -201,50 +292,18 @@
             const snap = await getDocs(query(collection(db, "users"), where("username", ">=", v), where("username", "<=", v + "\uf8ff"), limit(5)));
             snap.forEach(d => { 
                 const u = d.data();
-                z.innerHTML += `<div onclick="openProfile('${d.id}')" class="bg-zinc-900 p-3 rounded-xl cursor-pointer mb-2 font-bold uppercase text-[10px] border border-zinc-800 flex items-center justify-between">
-                    <span>${d.id}${u.is_verified ? ' ✅' : ''}</span>
+                z.innerHTML += `<div onclick="openProfile('${d.id}')" class="bg-zinc-900 p-4 rounded-2xl cursor-pointer mb-2 font-black uppercase text-[10px] border border-zinc-800 flex items-center justify-between hover:border-blue-500 transition">
+                    <span>${u.username}${u.is_verified ? ' ✅' : ''}</span>
                     <span class="text-zinc-600">${u.role}</span>
                 </div>`; 
             });
         };
 
-        window.showTab = async (t) => {
-            document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-            if(document.getElementById('btn-'+t)) document.getElementById('btn-'+t).classList.add('active');
-            const main = document.getElementById('main-content');
-            main.innerHTML = "";
-
-            if(t === 'friends') {
-                main.innerHTML = `<div id="f-grid" class="grid grid-cols-2 md:grid-cols-4 gap-4"></div>`;
-                if(!myData.following || myData.following.length === 0) { main.innerHTML = "<p class='text-zinc-600 text-xs italic'>No friends found.</p>"; return; }
-                for (const f of myData.following) {
-                    const snap = await getDoc(doc(db, "users", f));
-                    const u = snap.data();
-                    main.querySelector('#f-grid').innerHTML += `<div onclick="openProfile('${f}')" class="bg-zinc-900 p-6 rounded-3xl border border-zinc-800 text-center cursor-pointer font-black uppercase text-[10px] tracking-widest hover:bg-zinc-800">
-                        ${f}${u?.is_verified ? ' ✅' : ''}
-                    </div>`;
-                }
-            }
-            
-            if(t === 'home') {
-                main.innerHTML = `<div id="s-zone" class="mb-8 hidden"></div><div id="g-grid" class="grid grid-cols-1 md:grid-cols-3 gap-6"></div>`;
-                const snap = await getDocs(collection(db, "games"));
-                snap.forEach(d => {
-                    const g = d.data();
-                    main.querySelector('#g-grid').innerHTML += `<div onclick="openGame('${g.url}')" class="bg-zinc-900 rounded-[2rem] border border-zinc-800 p-5 cursor-pointer hover:border-blue-600 transition"><div class="h-32 bg-zinc-800 rounded-2xl mb-4 flex items-center justify-center text-4xl">🎮</div><p class="font-black italic uppercase text-white">${g.name}</p></div>`;
-                });
-            }
-        };
-
-        window.toggleFollow = async (n, isF) => {
-            await updateDoc(doc(db, "users", myData.username), {
-                following: isF ? arrayRemove(n) : arrayUnion(n)
-            });
+        window.toggleFollowAction = async (n, isF) => {
+            await updateDoc(doc(db, "users", myData.username.toLowerCase()), { following: isF ? arrayRemove(n) : arrayUnion(n) });
             openProfile(n);
         };
 
-        window.openGame = (u) => { document.getElementById('game-frame').src = u; document.getElementById('game-overlay').style.display='block'; };
-        window.closeGame = () => { document.getElementById('game-frame').src = ""; document.getElementById('game-overlay').style.display='none'; };
         window.signOut = signOut;
     </script>
 </body>
