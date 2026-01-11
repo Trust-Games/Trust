@@ -3,15 +3,12 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>Trust Games | Hardened</title>
+    <title>Trust Games | Connection Fix</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
-        :root { --accent: #3b82f6; --bg: #050505; --card: #0c0c0e; --border: #1c1c21; }
-        body { background: var(--bg); color: #e4e4e7; font-family: -apple-system, system-ui, sans-serif; overflow: hidden; height: 100dvh; }
-        
-        /* Layout Grid */
-        #app-shell { display: none; height: 100dvh; width: 100vw; flex-direction: column; }
-        @media (min-width: 1024px) { #app-shell { flex-direction: row; } }
+        :root { --blue: #3b82f6; --bg: #050505; --card: #0c0c0e; --border: #1c1c21; }
+        body { background: var(--bg); color: #e4e4e7; font-family: sans-serif; overflow: hidden; height: 100dvh; }
+        #app-shell { display: none; height: 100dvh; width: 100vw; position: relative; }
 
         /* Sidebar Overlay */
         .sidebar { 
@@ -23,44 +20,46 @@
         .sidebar.active { transform: translateX(0); box-shadow: 20px 0 60px #000; }
         @media (min-width: 1024px) { .sidebar { transform: translateX(0); position: relative; } }
 
-        /* Main Viewport */
+        /* Content Area */
         main { flex: 1; display: flex; flex-direction: column; height: 100%; overflow: hidden; }
         #view { flex: 1; overflow-y: auto; padding: 1rem; -webkit-overflow-scrolling: touch; }
 
-        /* Component Styles */
-        .glass-card { background: var(--card); border: 1px solid var(--border); border-radius: 1.25rem; padding: 1rem; }
-        .nav-btn { width: 100%; padding: 1rem; text-align: left; font-size: 11px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.05em; color: #71717a; border-radius: 0.75rem; transition: 0.2s; }
-        .nav-btn.active { color: white; background: #18181b; }
+        /* Chat Specific Scaling */
+        .chat-layout { display: flex; flex-direction: column; height: 100%; max-height: 100%; gap: 10px; }
+        .chat-list-scroll { display: flex; gap: 8px; overflow-x: auto; padding-bottom: 10px; flex-shrink: 0; }
+        .chat-msg-container { flex: 1; overflow-y: auto; background: var(--card); border: 1px solid var(--border); border-radius: 1.5rem; padding: 1rem; display: flex; flex-direction: column; }
         
-        /* Chat UI Fix */
-        .chat-area { display: flex; flex-direction: column; height: 100%; max-height: 100%; }
-        .bubble { padding: 0.75rem 1rem; border-radius: 1rem; max-width: 85%; font-size: 13px; line-height: 1.4; margin-bottom: 0.5rem; }
+        .bubble { padding: 10px 14px; border-radius: 1rem; max-width: 80%; font-size: 13px; margin-bottom: 8px; font-weight: 500; line-height: 1.4; }
+        .me { background: var(--blue); color: white; align-self: flex-end; border-bottom-right-radius: 4px; }
+        .them { background: #1c1c21; color: #a1a1aa; align-self: flex-start; border-bottom-left-radius: 4px; }
+
+        .btn-tab { padding: 12px 20px; text-align: left; font-size: 11px; font-weight: 800; text-transform: uppercase; color: #71717a; border-radius: 12px; }
+        .btn-tab.active { background: #111113; color: white; border: 1px solid var(--border); }
     </style>
 </head>
 <body>
 
-    <div id="boot-screen" class="fixed inset-0 bg-black z-[9999] flex items-center justify-center font-black text-blue-500 italic">INITIALIZING STABLE CORE...</div>
+    <div id="loader" class="fixed inset-0 bg-black z-[9999] flex items-center justify-center font-black text-blue-500">FIXING CHAT SUBSCRIPTIONS...</div>
 
-    <div id="app-shell">
-        <aside id="side-menu" class="sidebar">
-            <div class="p-8 text-2xl font-black italic tracking-tighter">TRUST</div>
+    <div id="app-shell" class="flex">
+        <aside id="sidebar" class="sidebar">
+            <div class="p-8 text-2xl font-black italic">TRUST</div>
             <nav class="flex-1 px-4 space-y-1">
-                <button onclick="nav('home')" id="n-home" class="nav-btn active">Vault</button>
-                <button onclick="nav('chat')" id="n-chat" class="nav-btn">Messages</button>
-                <button onclick="nav('social')" id="n-social" class="nav-btn">Circle</button>
-                <button onclick="nav('admin')" id="n-admin" class="nav-btn text-yellow-500 hidden">Staff Room</button>
+                <button onclick="nav('home')" id="n-home" class="btn-tab w-full active">Games</button>
+                <button onclick="nav('chat')" id="n-chat" class="btn-tab w-full">Messages</button>
+                <button onclick="nav('social')" id="n-social" class="btn-tab w-full">Circle</button>
+                <button onclick="nav('admin')" id="n-admin" class="btn-tab w-full text-yellow-500 hidden">Admin</button>
             </nav>
-            <div class="p-6 border-t border-zinc-900 flex flex-col gap-1">
-                <p id="me-name" class="font-bold text-sm truncate"></p>
-                <p id="me-cr" class="text-yellow-500 text-[10px] font-mono"></p>
-                <button onclick="location.reload()" class="mt-4 text-[9px] text-zinc-600 uppercase text-left">Force Refresh</button>
+            <div class="p-6 border-t border-zinc-900">
+                <p id="my-id" class="font-bold text-sm"></p>
+                <button onclick="location.reload()" class="text-[10px] text-zinc-600 uppercase mt-2">Re-Sync System</button>
             </div>
         </aside>
 
         <main>
-            <header class="h-16 border-b border-zinc-900 flex items-center px-4 justify-between bg-black/50">
-                <button onclick="toggleSide()" class="lg:hidden p-2">☰</button>
-                <input id="glob-search" oninput="debounceSearch()" placeholder="Find Player..." class="bg-zinc-900 border border-zinc-800 p-2 rounded-lg text-xs w-40 sm:w-64 outline-none focus:border-blue-600">
+            <header class="h-16 border-b border-zinc-900 flex items-center px-4 justify-between bg-black">
+                <button onclick="toggleSide()" class="lg:hidden p-2 text-xl">☰</button>
+                <input id="search-in" oninput="doSearch()" placeholder="Search ID..." class="bg-zinc-900 border border-zinc-800 p-2 rounded-lg text-xs w-48 outline-none">
             </header>
             <div id="view"></div>
         </main>
@@ -68,7 +67,7 @@
 
     <div id="modal" class="fixed inset-0 bg-black/90 z-[6000] hidden items-center justify-center p-4" onclick="this.style.display='none'">
         <div class="bg-[#09090b] w-full max-w-sm rounded-[2rem] p-6 border border-zinc-800" onclick="event.stopPropagation()">
-            <div id="modal-box"></div>
+            <div id="modal-content"></div>
         </div>
     </div>
 
@@ -82,7 +81,7 @@
         const auth = getAuth(app);
         const db = getFirestore(app);
 
-        let myData = null, chatSub = null;
+        let myData = null, chatUnsub = null, currentCID = null;
 
         onAuthStateChanged(auth, u => {
             if (u) {
@@ -90,143 +89,128 @@
                 onSnapshot(doc(db, "users", id), s => {
                     if(!s.exists()) return;
                     myData = s.data();
-                    document.getElementById('me-name').innerHTML = `${myData.username}${myData.is_verified ? ' ✅' : ''}`;
-                    document.getElementById('me-cr').innerText = `${myData.credits.toLocaleString()} CR`;
+                    document.getElementById('my-id').innerText = myData.username.toUpperCase();
                     if(['owner','admin'].includes(myData.role)) document.getElementById('n-admin').classList.remove('hidden');
                     document.getElementById('app-shell').style.display = 'flex';
-                    document.getElementById('boot-screen').style.display = 'none';
+                    document.getElementById('loader').style.display = 'none';
                     if(!document.getElementById('view').innerHTML) nav('home');
                 });
-            } else { window.location.href = "login.html"; } // Replace with your login page
+            } else { location.reload(); }
         });
 
-        window.toggleSide = () => document.getElementById('side-menu').classList.toggle('active');
+        window.toggleSide = () => document.getElementById('sidebar').classList.toggle('active');
         
         window.nav = (t) => {
-            if(window.innerWidth < 1024) document.getElementById('side-menu').classList.remove('active');
-            document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+            if(window.innerWidth < 1024) document.getElementById('sidebar').classList.remove('active');
+            document.querySelectorAll('.btn-tab').forEach(b => b.classList.remove('active'));
             document.getElementById('n-'+t).classList.add('active');
-            renderTab(t);
+            render(t);
         };
 
-        async function renderTab(t) {
+        async function render(t) {
             const view = document.getElementById('view');
-            view.innerHTML = `<div class="p-10 text-center text-xs opacity-50">SYNCING...</div>`;
+            view.innerHTML = `<div class="p-10 text-center text-xs opacity-50">SYNCING DATA...</div>`;
 
-            try {
-                if(t === 'home') {
-                    view.innerHTML = `<div class="grid grid-cols-2 md:grid-cols-4 gap-3" id="g-list"></div>`;
-                    const s = await getDocs(collection(db, "games"));
+            if(t === 'home') {
+                view.innerHTML = `<div class="grid grid-cols-2 md:grid-cols-4 gap-3" id="g-grid"></div>`;
+                const s = await getDocs(collection(db, "games"));
+                s.forEach(d => {
+                    view.querySelector('#g-grid').innerHTML += `<div onclick="window.open('${d.data().url}')" class="bg-zinc-900 aspect-square rounded-[1.5rem] border border-zinc-800 flex flex-col items-center justify-center p-4 hover:border-blue-500 cursor-pointer"><div class="text-3xl mb-1">🎮</div><div class="text-[9px] font-black uppercase">${d.data().name}</div></div>`;
+                });
+            }
+
+            if(t === 'chat') {
+                view.innerHTML = `
+                <div class="chat-layout">
+                    <div id="c-list" class="chat-list-scroll"></div>
+                    <div id="c-box" class="chat-msg-container"></div>
+                    <div class="flex gap-2 bg-black/40 p-2 rounded-2xl border border-zinc-900">
+                        <input id="m-in" class="flex-1 bg-transparent p-2 text-xs outline-none" placeholder="Message...">
+                        <button onclick="send()" class="bg-blue-600 px-5 py-2 rounded-xl font-black text-[10px]">SEND</button>
+                    </div>
+                </div>`;
+                onSnapshot(query(collection(db, "chats"), where("members", "array-contains", myData.username.toLowerCase())), s => {
+                    const list = document.getElementById('c-list'); if(!list) return; list.innerHTML = "";
                     s.forEach(d => {
-                        view.querySelector('#g-list').innerHTML += `<div onclick="window.open('${d.data().url}')" class="glass-card aspect-square flex flex-col items-center justify-center hover:border-blue-600 transition cursor-pointer"><div class="text-3xl mb-2">🎮</div><div class="text-[10px] font-black uppercase text-center">${d.data().name}</div></div>`;
+                        const other = d.data().members.find(m => m !== myData.username.toLowerCase());
+                        list.innerHTML += `<button onclick="switchChat('${d.id}')" class="bg-zinc-900 px-4 py-2 rounded-xl text-[10px] font-bold border border-zinc-800 whitespace-nowrap">${other}</button>`;
                     });
-                }
+                });
+            }
 
-                if(t === 'admin') {
-                    const s = await getDocs(query(collection(db, "users"), limit(50)));
-                    view.innerHTML = `<h2 class="text-lg font-black mb-4 uppercase">User Control</h2><div class="space-y-2" id="adm-list"></div>`;
-                    s.forEach(d => {
-                        const u = d.data();
-                        view.querySelector('#adm-list').innerHTML += `
-                        <div class="glass-card flex justify-between items-center py-3">
-                            <span class="text-xs font-bold uppercase">${u.username}</span>
-                            <button onclick="toggleVerify('${d.id}', ${u.is_verified})" class="px-4 py-2 rounded-lg text-[10px] font-black ${u.is_verified ? 'bg-blue-600' : 'bg-zinc-800'}">${u.is_verified ? 'VERIFIED' : 'VERIFY'}</button>
-                        </div>`;
-                    });
-                }
-
-                if(t === 'chat') {
-                    view.innerHTML = `<div class="chat-area"><div id="chat-tabs" class="flex gap-2 mb-3 overflow-x-auto pb-2"></div><div id="chat-box" class="flex-1 overflow-y-auto glass-card mb-3 p-4 flex flex-col"></div><div class="flex gap-2"><input id="m-in" class="flex-1 bg-zinc-900 border border-zinc-800 p-3 rounded-xl text-xs outline-none" placeholder="Say something..."><button onclick="sendMsg()" class="bg-blue-600 px-6 rounded-xl font-black text-xs">SEND</button></div></div>`;
-                    onSnapshot(query(collection(db, "chats"), where("members", "array-contains", myData.username.toLowerCase())), s => {
-                        const tabs = document.getElementById('chat-tabs'); if(!tabs) return; tabs.innerHTML = "";
-                        s.forEach(d => {
-                            const other = d.data().members.find(m => m !== myData.username.toLowerCase());
-                            tabs.innerHTML += `<button onclick="openChat('${d.id}')" class="bg-zinc-900 px-4 py-2 rounded-lg text-[10px] font-bold border border-zinc-800">${other}</button>`;
-                        });
-                    });
-                }
-
-                if(t === 'social') {
-                    if(!myData.following || myData.following.length === 0) { view.innerHTML = `<div class="p-10 text-center text-xs">No users in your circle.</div>`; return; }
-                    view.innerHTML = `<div class="grid grid-cols-2 md:grid-cols-4 gap-3" id="f-grid"></div>`;
-                    for(const f of myData.following) {
-                        const s = await getDoc(doc(db, "users", f.toLowerCase()));
-                        if(s.exists()) {
-                            view.querySelector('#f-grid').innerHTML += `<div onclick="profile('${f}')" class="glass-card text-center cursor-pointer hover:bg-zinc-900"><p class="text-[10px] font-black uppercase">${s.data().username}${s.data().is_verified ? ' ✅' : ''}</p></div>`;
-                        }
-                    }
-                }
-            } catch (err) { view.innerHTML = `<div class="p-10 text-red-500 text-xs">Error: ${err.message}</div>`; }
+            if(t === 'admin') {
+                const s = await getDocs(collection(db, "users"));
+                view.innerHTML = `<h2 class="text-lg font-black mb-4 uppercase">Admin Hub</h2>`;
+                s.forEach(d => {
+                    const u = d.data();
+                    view.innerHTML += `
+                    <div class="bg-zinc-900 p-4 rounded-xl border border-zinc-800 flex justify-between items-center mb-2">
+                        <span class="text-xs font-bold uppercase">${u.username}</span>
+                        <button onclick="verify('${d.id}', ${u.is_verified})" class="px-4 py-2 rounded-lg text-[10px] font-black ${u.is_verified ? 'bg-blue-600' : 'bg-zinc-800'}">${u.is_verified ? 'VERIFIED' : 'VERIFY'}</button>
+                    </div>`;
+                });
+            }
         }
 
-        window.toggleVerify = async (id, cur) => {
-            try {
-                await updateDoc(doc(db, "users", id.toLowerCase()), { is_verified: !cur });
-                nav('admin');
-            } catch (e) { alert("Verification Failed"); }
-        };
-
-        window.openChat = (id) => {
-            if(chatSub) chatSub();
-            window.activeChat = id;
-            chatSub = onSnapshot(query(collection(db, "chats", id, "messages"), orderBy("time", "asc"), limit(50)), s => {
-                const box = document.getElementById('chat-box'); if(!box) return; box.innerHTML = "";
+        window.switchChat = (id) => {
+            if(chatUnsub) chatUnsub(); // KILL PREVIOUS LISTENER
+            currentCID = id;
+            chatUnsub = onSnapshot(query(collection(db, "chats", id, "messages"), orderBy("time", "asc"), limit(40)), s => {
+                const box = document.getElementById('c-box'); if(!box) return;
+                box.innerHTML = "";
                 s.forEach(d => {
                     const m = d.data(); const isMe = m.sender === myData.username.toLowerCase();
-                    box.innerHTML += `<div class="bubble ${isMe ? 'bg-blue-600 self-end text-white' : 'bg-zinc-800 self-start'}">${m.text}</div>`;
+                    box.innerHTML += `<div class="bubble ${isMe ? 'me' : 'them'}">${m.text}</div>`;
                 });
                 box.scrollTop = box.scrollHeight;
             });
         };
 
-        window.sendMsg = async () => {
+        window.send = async () => {
             const i = document.getElementById('m-in');
-            if(!i.value || !window.activeChat) return;
-            await addDoc(collection(db, "chats", window.activeChat, "messages"), { text: i.value, sender: myData.username.toLowerCase(), time: serverTimestamp() });
+            if(!i.value || !currentCID) return;
+            await addDoc(collection(db, "chats", currentCID, "messages"), {
+                text: i.value, sender: myData.username.toLowerCase(), time: serverTimestamp()
+            });
             i.value = "";
         };
 
-        window.profile = async (id) => {
+        window.doSearch = async () => {
+            const v = document.getElementById('search-in').value.toLowerCase();
+            if(!v) return;
+            const s = await getDocs(query(collection(db, "users"), where("username", ">=", v), where("username", "<=", v + "\uf8ff"), limit(5)));
+            document.getElementById('view').innerHTML = `<h2 class="text-xs font-black mb-4 uppercase">Results</h2>`;
+            s.forEach(d => {
+                document.getElementById('view').innerHTML += `<div onclick="openProfile('${d.id}')" class="bg-zinc-900 p-4 rounded-xl border border-zinc-800 mb-2 cursor-pointer">${d.data().username}</div>`;
+            });
+        };
+
+        window.openProfile = async (id) => {
             const s = await getDoc(doc(db, "users", id.toLowerCase()));
-            if(!s.exists()) return;
             const u = s.data();
-            const isF = myData.following?.includes(id.toLowerCase());
-            document.getElementById('modal-box').innerHTML = `
-                <div class="text-center mb-6">
-                    <p class="text-4xl font-black text-yellow-500 mb-1">${u.credits}</p>
-                    <h3 class="text-xl font-black uppercase text-white">${u.username}${u.is_verified ? ' ✅' : ''}</h3>
-                </div>
-                <div class="flex flex-col gap-2">
-                    <button onclick="startConvo('${id}')" class="bg-white text-black py-4 rounded-xl font-black text-xs uppercase">Message</button>
-                    <button onclick="follow('${id}', ${isF})" class="bg-zinc-800 py-4 rounded-xl font-black text-xs uppercase">${isF ? 'Unfollow' : 'Follow'}</button>
-                </div>`;
+            document.getElementById('modal-content').innerHTML = `
+                <div class="text-center mb-6"><p class="text-4xl font-black text-yellow-500 mb-1">${u.credits}</p><h3 class="font-black uppercase">${u.username}</h3></div>
+                <button onclick="createChat('${id}')" class="w-full bg-blue-600 py-4 rounded-xl font-black text-xs uppercase mb-2">Message</button>
+                <button onclick="follow('${id}')" class="w-full bg-zinc-800 py-4 rounded-xl font-black text-xs uppercase">Follow</button>`;
             document.getElementById('modal').style.display = 'flex';
         };
 
-        window.startConvo = async (id) => {
-            const pair = [myData.username.toLowerCase(), id.toLowerCase()].sort();
+        window.createChat = async (targetID) => {
+            const pair = [myData.username.toLowerCase(), targetID.toLowerCase()].sort();
             const cid = pair.join('_');
             const ref = doc(db, "chats", cid);
-            if(!(await getDoc(ref)).exists()) { await setDoc(ref, { members: pair }); }
+            const snap = await getDoc(ref);
+            if(!snap.exists()) {
+                await setDoc(ref, { members: pair, lastActive: serverTimestamp() });
+            }
             document.getElementById('modal').style.display = 'none';
-            nav('chat'); setTimeout(() => openChat(cid), 300);
+            nav('chat');
+            setTimeout(() => switchChat(cid), 300);
         };
 
-        window.follow = async (id, isF) => {
-            await updateDoc(doc(db, "users", myData.username.toLowerCase()), { following: isF ? arrayRemove(id.toLowerCase()) : arrayUnion(id.toLowerCase()) });
-            profile(id);
-        };
-
-        let deb;
-        window.debounceSearch = () => {
-            clearTimeout(deb);
-            deb = setTimeout(async () => {
-                const v = document.getElementById('glob-search').value.toLowerCase();
-                if(!v) return;
-                const s = await getDocs(query(collection(db, "users"), where("username", ">=", v), where("username", "<=", v + "\uf8ff"), limit(5)));
-                const v_ = document.getElementById('view'); v_.innerHTML = `<h2 class="text-xs font-black mb-4 uppercase">Search Results</h2>`;
-                s.forEach(d => { v_.innerHTML += `<div onclick="profile('${d.id}')" class="glass-card mb-2 cursor-pointer">${d.data().username}</div>`; });
-            }, 400);
+        window.verify = async (id, cur) => {
+            await updateDoc(doc(db, "users", id.toLowerCase()), { is_verified: !cur });
+            nav('admin');
         };
     </script>
 </body>
