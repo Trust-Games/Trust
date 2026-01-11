@@ -3,14 +3,18 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>Trust Games | Connection Fix</title>
+    <title>Trust Games | Stable</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         :root { --blue: #3b82f6; --bg: #050505; --card: #0c0c0e; --border: #1c1c21; }
         body { background: var(--bg); color: #e4e4e7; font-family: sans-serif; overflow: hidden; height: 100dvh; }
-        #app-shell { display: none; height: 100dvh; width: 100vw; position: relative; }
+        
+        /* Containers */
+        #auth-screen { display: flex; height: 100dvh; align-items: center; justify-content: center; background: #000; z-index: 9999; position: relative; }
+        #app-shell { display: none; height: 100dvh; width: 100vw; flex-direction: column; }
+        @media (min-width: 1024px) { #app-shell { flex-direction: row; } }
 
-        /* Sidebar Overlay */
+        /* Sidebar & Navigation */
         .sidebar { 
             width: 280px; background: #09090b; border-right: 1px solid var(--border); 
             display: flex; flex-direction: column; height: 100%;
@@ -20,197 +24,202 @@
         .sidebar.active { transform: translateX(0); box-shadow: 20px 0 60px #000; }
         @media (min-width: 1024px) { .sidebar { transform: translateX(0); position: relative; } }
 
-        /* Content Area */
+        /* Smooth Content Area */
         main { flex: 1; display: flex; flex-direction: column; height: 100%; overflow: hidden; }
-        #view { flex: 1; overflow-y: auto; padding: 1rem; -webkit-overflow-scrolling: touch; }
+        #view { flex: 1; overflow-y: auto; padding: 1.25rem; -webkit-overflow-scrolling: touch; }
 
-        /* Chat Specific Scaling */
-        .chat-layout { display: flex; flex-direction: column; height: 100%; max-height: 100%; gap: 10px; }
-        .chat-list-scroll { display: flex; gap: 8px; overflow-x: auto; padding-bottom: 10px; flex-shrink: 0; }
-        .chat-msg-container { flex: 1; overflow-y: auto; background: var(--card); border: 1px solid var(--border); border-radius: 1.5rem; padding: 1rem; display: flex; flex-direction: column; }
+        /* Elements */
+        .glass { background: var(--card); border: 1px solid var(--border); border-radius: 1.25rem; }
+        .btn-nav { width: 100%; padding: 1rem; text-align: left; font-size: 11px; font-weight: 800; text-transform: uppercase; color: #71717a; border-radius: 12px; transition: 0.2s; }
+        .btn-nav.active { background: #111113; color: #fff; border: 1px solid var(--border); }
         
-        .bubble { padding: 10px 14px; border-radius: 1rem; max-width: 80%; font-size: 13px; margin-bottom: 8px; font-weight: 500; line-height: 1.4; }
-        .me { background: var(--blue); color: white; align-self: flex-end; border-bottom-right-radius: 4px; }
-        .them { background: #1c1c21; color: #a1a1aa; align-self: flex-start; border-bottom-left-radius: 4px; }
-
-        .btn-tab { padding: 12px 20px; text-align: left; font-size: 11px; font-weight: 800; text-transform: uppercase; color: #71717a; border-radius: 12px; }
-        .btn-tab.active { background: #111113; color: white; border: 1px solid var(--border); }
+        /* Chat Scaling Fix */
+        .chat-container { display: flex; flex-direction: column; height: 100%; gap: 10px; }
+        .chat-box { flex: 1; overflow-y: auto; padding: 1rem; display: flex; flex-direction: column; gap: 8px; background: #08080a; border-radius: 1.5rem; border: 1px solid var(--border); }
+        .bubble { padding: 10px 14px; border-radius: 1rem; max-width: 80%; font-size: 13px; font-weight: 500; }
+        .bubble.me { background: var(--blue); align-self: flex-end; }
+        .bubble.them { background: #1c1c21; align-self: flex-start; color: #a1a1aa; }
     </style>
 </head>
 <body>
 
-    <div id="loader" class="fixed inset-0 bg-black z-[9999] flex items-center justify-center font-black text-blue-500">FIXING CHAT SUBSCRIPTIONS...</div>
+    <div id="auth-screen">
+        <div class="w-full max-w-xs text-center">
+            <h1 class="text-3xl font-black italic mb-8">TRUST</h1>
+            <div id="auth-form" class="space-y-3">
+                <input id="auth-email" type="email" placeholder="Email" class="w-full bg-zinc-900 border border-zinc-800 p-4 rounded-2xl text-sm outline-none focus:border-blue-600">
+                <input id="auth-pass" type="password" placeholder="Password" class="w-full bg-zinc-900 border border-zinc-800 p-4 rounded-2xl text-sm outline-none focus:border-blue-600">
+                <button onclick="handleAuth('login')" class="w-full bg-blue-600 py-4 rounded-2xl font-black text-xs uppercase">Login</button>
+                <button onclick="handleAuth('reg')" class="w-full bg-zinc-800 py-4 rounded-2xl font-black text-xs uppercase">Create Account</button>
+            </div>
+            <p id="auth-error" class="text-red-500 text-[10px] mt-4 font-bold uppercase"></p>
+        </div>
+    </div>
 
-    <div id="app-shell" class="flex">
+    <div id="app-shell">
         <aside id="sidebar" class="sidebar">
             <div class="p-8 text-2xl font-black italic">TRUST</div>
             <nav class="flex-1 px-4 space-y-1">
-                <button onclick="nav('home')" id="n-home" class="btn-tab w-full active">Games</button>
-                <button onclick="nav('chat')" id="n-chat" class="btn-tab w-full">Messages</button>
-                <button onclick="nav('social')" id="n-social" class="btn-tab w-full">Circle</button>
-                <button onclick="nav('admin')" id="n-admin" class="btn-tab w-full text-yellow-500 hidden">Admin</button>
+                <button onclick="nav('home')" id="n-home" class="btn-nav active">Vault</button>
+                <button onclick="nav('chat')" id="n-chat" class="btn-nav">Messages</button>
+                <button onclick="nav('admin')" id="n-admin" class="btn-nav text-yellow-500 hidden">Staff</button>
             </nav>
             <div class="p-6 border-t border-zinc-900">
-                <p id="my-id" class="font-bold text-sm"></p>
-                <button onclick="location.reload()" class="text-[10px] text-zinc-600 uppercase mt-2">Re-Sync System</button>
+                <p id="display-name" class="font-bold text-sm truncate"></p>
+                <button onclick="logout()" class="text-[10px] text-zinc-600 uppercase mt-2 font-bold">Logout</button>
             </div>
         </aside>
 
         <main>
             <header class="h-16 border-b border-zinc-900 flex items-center px-4 justify-between bg-black">
                 <button onclick="toggleSide()" class="lg:hidden p-2 text-xl">☰</button>
-                <input id="search-in" oninput="doSearch()" placeholder="Search ID..." class="bg-zinc-900 border border-zinc-800 p-2 rounded-lg text-xs w-48 outline-none">
+                <input id="search-bar" oninput="doSearch()" placeholder="Search User ID..." class="bg-zinc-900 border border-zinc-800 p-2 rounded-xl text-xs w-48 outline-none">
             </header>
             <div id="view"></div>
         </main>
     </div>
 
-    <div id="modal" class="fixed inset-0 bg-black/90 z-[6000] hidden items-center justify-center p-4" onclick="this.style.display='none'">
-        <div class="bg-[#09090b] w-full max-w-sm rounded-[2rem] p-6 border border-zinc-800" onclick="event.stopPropagation()">
-            <div id="modal-content"></div>
-        </div>
-    </div>
-
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-        import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
-        import { getFirestore, doc, getDoc, setDoc, updateDoc, onSnapshot, collection, query, where, orderBy, addDoc, serverTimestamp, limit, arrayUnion, arrayRemove, getDocs } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+        import { getAuth, onAuthStateChanged, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+        import { getFirestore, doc, getDoc, setDoc, updateDoc, onSnapshot, collection, query, where, orderBy, addDoc, serverTimestamp, limit, getDocs } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
         const firebaseConfig = { apiKey: "AIzaSyDV1Iq9F7N152JjXN7goayLLBiES8B4HkU", authDomain: "trust-games-1.firebaseapp.com", projectId: "trust-games-1", storageBucket: "trust-games-1.firebasestorage.app", messagingSenderId: "923318206410", appId: "1:923318206410:web:646cfe42238f9136cb5933" };
         const app = initializeApp(firebaseConfig);
         const auth = getAuth(app);
         const db = getFirestore(app);
 
-        let myData = null, chatUnsub = null, currentCID = null;
+        let userMe = null, chatUnsub = null, activeCID = null;
 
+        // AUTH STATE OBSERVER
         onAuthStateChanged(auth, u => {
             if (u) {
                 const id = u.email.split('@')[0].toLowerCase();
                 onSnapshot(doc(db, "users", id), s => {
                     if(!s.exists()) return;
-                    myData = s.data();
-                    document.getElementById('my-id').innerText = myData.username.toUpperCase();
-                    if(['owner','admin'].includes(myData.role)) document.getElementById('n-admin').classList.remove('hidden');
+                    userMe = s.data();
+                    document.getElementById('display-name').innerText = userMe.username.toUpperCase();
+                    if(['owner','admin'].includes(userMe.role)) document.getElementById('n-admin').classList.remove('hidden');
                     document.getElementById('app-shell').style.display = 'flex';
-                    document.getElementById('loader').style.display = 'none';
+                    document.getElementById('auth-screen').style.display = 'none';
                     if(!document.getElementById('view').innerHTML) nav('home');
                 });
-            } else { location.reload(); }
+            } else {
+                document.getElementById('app-shell').style.display = 'none';
+                document.getElementById('auth-screen').style.display = 'flex';
+            }
         });
 
-        window.toggleSide = () => document.getElementById('sidebar').classList.toggle('active');
-        
-        window.nav = (t) => {
-            if(window.innerWidth < 1024) document.getElementById('sidebar').classList.remove('active');
-            document.querySelectorAll('.btn-tab').forEach(b => b.classList.remove('active'));
-            document.getElementById('n-'+t).classList.add('active');
-            render(t);
+        // AUTH HANDLER
+        window.handleAuth = async (type) => {
+            const email = document.getElementById('auth-email').value;
+            const pass = document.getElementById('auth-pass').value;
+            const err = document.getElementById('auth-error');
+            try {
+                if(type === 'login') await signInWithEmailAndPassword(auth, email, pass);
+                else {
+                    const res = await createUserWithEmailAndPassword(auth, email, pass);
+                    const id = email.split('@')[0].toLowerCase();
+                    await setDoc(doc(db, "users", id), { username: id, credits: 0, role: 'user', is_verified: false, following: [] });
+                }
+            } catch (e) { err.innerText = e.message; }
         };
 
-        async function render(t) {
+        window.logout = () => signOut(auth);
+        window.toggleSide = () => document.getElementById('sidebar').classList.toggle('active');
+        window.nav = (t) => {
+            document.querySelectorAll('.btn-nav').forEach(b => b.classList.remove('active'));
+            document.getElementById('n-'+t).classList.add('active');
+            if(window.innerWidth < 1024) document.getElementById('sidebar').classList.remove('active');
+            renderView(t);
+        };
+
+        async function renderView(t) {
             const view = document.getElementById('view');
-            view.innerHTML = `<div class="p-10 text-center text-xs opacity-50">SYNCING DATA...</div>`;
+            view.innerHTML = `<div class="p-10 text-center text-xs opacity-50">SYNCING...</div>`;
 
             if(t === 'home') {
-                view.innerHTML = `<div class="grid grid-cols-2 md:grid-cols-4 gap-3" id="g-grid"></div>`;
+                view.innerHTML = `<div class="grid grid-cols-2 md:grid-cols-4 gap-3" id="g-list"></div>`;
                 const s = await getDocs(collection(db, "games"));
                 s.forEach(d => {
-                    view.querySelector('#g-grid').innerHTML += `<div onclick="window.open('${d.data().url}')" class="bg-zinc-900 aspect-square rounded-[1.5rem] border border-zinc-800 flex flex-col items-center justify-center p-4 hover:border-blue-500 cursor-pointer"><div class="text-3xl mb-1">🎮</div><div class="text-[9px] font-black uppercase">${d.data().name}</div></div>`;
+                    view.querySelector('#g-list').innerHTML += `<div onclick="window.open('${d.data().url}')" class="glass aspect-square flex flex-col items-center justify-center p-4 hover:border-blue-600 transition cursor-pointer"><div class="text-3xl mb-1">🎮</div><div class="text-[9px] font-black uppercase">${d.data().name}</div></div>`;
                 });
             }
 
             if(t === 'chat') {
                 view.innerHTML = `
-                <div class="chat-layout">
-                    <div id="c-list" class="chat-list-scroll"></div>
-                    <div id="c-box" class="chat-msg-container"></div>
-                    <div class="flex gap-2 bg-black/40 p-2 rounded-2xl border border-zinc-900">
-                        <input id="m-in" class="flex-1 bg-transparent p-2 text-xs outline-none" placeholder="Message...">
-                        <button onclick="send()" class="bg-blue-600 px-5 py-2 rounded-xl font-black text-[10px]">SEND</button>
+                <div class="chat-container">
+                    <div id="chat-tabs" class="flex gap-2 overflow-x-auto pb-2"></div>
+                    <div id="chat-msgs" class="chat-box"></div>
+                    <div class="flex gap-2 p-2 bg-zinc-900 rounded-2xl">
+                        <input id="msg-input" class="flex-1 bg-transparent p-2 text-xs outline-none" placeholder="Message...">
+                        <button onclick="sendMsg()" class="bg-blue-600 px-6 py-2 rounded-xl font-black text-[10px]">SEND</button>
                     </div>
                 </div>`;
-                onSnapshot(query(collection(db, "chats"), where("members", "array-contains", myData.username.toLowerCase())), s => {
-                    const list = document.getElementById('c-list'); if(!list) return; list.innerHTML = "";
+                onSnapshot(query(collection(db, "chats"), where("members", "array-contains", userMe.username.toLowerCase())), s => {
+                    const tabs = document.getElementById('chat-tabs'); if(!tabs) return; tabs.innerHTML = "";
                     s.forEach(d => {
-                        const other = d.data().members.find(m => m !== myData.username.toLowerCase());
-                        list.innerHTML += `<button onclick="switchChat('${d.id}')" class="bg-zinc-900 px-4 py-2 rounded-xl text-[10px] font-bold border border-zinc-800 whitespace-nowrap">${other}</button>`;
+                        const other = d.data().members.find(m => m !== userMe.username.toLowerCase());
+                        tabs.innerHTML += `<button onclick="switchChat('${d.id}')" class="bg-zinc-800 px-4 py-2 rounded-xl text-[10px] font-bold border border-zinc-700 whitespace-nowrap">${other}</button>`;
                     });
                 });
             }
 
             if(t === 'admin') {
                 const s = await getDocs(collection(db, "users"));
-                view.innerHTML = `<h2 class="text-lg font-black mb-4 uppercase">Admin Hub</h2>`;
+                view.innerHTML = `<h2 class="text-sm font-black mb-4 uppercase text-zinc-500">Staff Management</h2>`;
                 s.forEach(d => {
                     const u = d.data();
-                    view.innerHTML += `
-                    <div class="bg-zinc-900 p-4 rounded-xl border border-zinc-800 flex justify-between items-center mb-2">
+                    view.innerHTML += `<div class="glass p-4 flex justify-between items-center mb-2">
                         <span class="text-xs font-bold uppercase">${u.username}</span>
-                        <button onclick="verify('${d.id}', ${u.is_verified})" class="px-4 py-2 rounded-lg text-[10px] font-black ${u.is_verified ? 'bg-blue-600' : 'bg-zinc-800'}">${u.is_verified ? 'VERIFIED' : 'VERIFY'}</button>
+                        <button onclick="verifyUser('${d.id}', ${u.is_verified})" class="px-4 py-2 rounded-lg text-[10px] font-black ${u.is_verified ? 'bg-blue-600' : 'bg-zinc-800'}">${u.is_verified ? 'VERIFIED' : 'VERIFY'}</button>
                     </div>`;
                 });
             }
         }
 
         window.switchChat = (id) => {
-            if(chatUnsub) chatUnsub(); // KILL PREVIOUS LISTENER
-            currentCID = id;
-            chatUnsub = onSnapshot(query(collection(db, "chats", id, "messages"), orderBy("time", "asc"), limit(40)), s => {
-                const box = document.getElementById('c-box'); if(!box) return;
+            if(chatUnsub) chatUnsub();
+            activeCID = id;
+            chatUnsub = onSnapshot(query(collection(db, "chats", id, "messages"), orderBy("time", "asc"), limit(30)), s => {
+                const box = document.getElementById('chat-msgs'); if(!box) return;
                 box.innerHTML = "";
                 s.forEach(d => {
-                    const m = d.data(); const isMe = m.sender === myData.username.toLowerCase();
+                    const m = d.data(); const isMe = m.sender === userMe.username.toLowerCase();
                     box.innerHTML += `<div class="bubble ${isMe ? 'me' : 'them'}">${m.text}</div>`;
                 });
                 box.scrollTop = box.scrollHeight;
             });
         };
 
-        window.send = async () => {
-            const i = document.getElementById('m-in');
-            if(!i.value || !currentCID) return;
-            await addDoc(collection(db, "chats", currentCID, "messages"), {
-                text: i.value, sender: myData.username.toLowerCase(), time: serverTimestamp()
-            });
+        window.sendMsg = async () => {
+            const i = document.getElementById('msg-input');
+            if(!i.value || !activeCID) return;
+            await addDoc(collection(db, "chats", activeCID, "messages"), { text: i.value, sender: userMe.username.toLowerCase(), time: serverTimestamp() });
             i.value = "";
         };
 
+        window.verifyUser = async (id, cur) => {
+            await updateDoc(doc(db, "users", id.toLowerCase()), { is_verified: !cur });
+            renderView('admin');
+        };
+
         window.doSearch = async () => {
-            const v = document.getElementById('search-in').value.toLowerCase();
+            const v = document.getElementById('search-bar').value.toLowerCase();
             if(!v) return;
-            const s = await getDocs(query(collection(db, "users"), where("username", ">=", v), where("username", "<=", v + "\uf8ff"), limit(5)));
-            document.getElementById('view').innerHTML = `<h2 class="text-xs font-black mb-4 uppercase">Results</h2>`;
+            const s = await getDocs(query(collection(db, "users"), where("username", ">=", v), where("username", "<=", v + "\uf8ff"), limit(3)));
+            const view = document.getElementById('view'); view.innerHTML = "";
             s.forEach(d => {
-                document.getElementById('view').innerHTML += `<div onclick="openProfile('${d.id}')" class="bg-zinc-900 p-4 rounded-xl border border-zinc-800 mb-2 cursor-pointer">${d.data().username}</div>`;
+                view.innerHTML += `<div onclick="createConvo('${d.id}')" class="glass p-4 mb-2 cursor-pointer font-bold uppercase text-xs">Chat with ${d.data().username}</div>`;
             });
         };
 
-        window.openProfile = async (id) => {
-            const s = await getDoc(doc(db, "users", id.toLowerCase()));
-            const u = s.data();
-            document.getElementById('modal-content').innerHTML = `
-                <div class="text-center mb-6"><p class="text-4xl font-black text-yellow-500 mb-1">${u.credits}</p><h3 class="font-black uppercase">${u.username}</h3></div>
-                <button onclick="createChat('${id}')" class="w-full bg-blue-600 py-4 rounded-xl font-black text-xs uppercase mb-2">Message</button>
-                <button onclick="follow('${id}')" class="w-full bg-zinc-800 py-4 rounded-xl font-black text-xs uppercase">Follow</button>`;
-            document.getElementById('modal').style.display = 'flex';
-        };
-
-        window.createChat = async (targetID) => {
-            const pair = [myData.username.toLowerCase(), targetID.toLowerCase()].sort();
+        window.createConvo = async (tid) => {
+            const pair = [userMe.username.toLowerCase(), tid.toLowerCase()].sort();
             const cid = pair.join('_');
             const ref = doc(db, "chats", cid);
-            const snap = await getDoc(ref);
-            if(!snap.exists()) {
-                await setDoc(ref, { members: pair, lastActive: serverTimestamp() });
-            }
-            document.getElementById('modal').style.display = 'none';
-            nav('chat');
-            setTimeout(() => switchChat(cid), 300);
-        };
-
-        window.verify = async (id, cur) => {
-            await updateDoc(doc(db, "users", id.toLowerCase()), { is_verified: !cur });
-            nav('admin');
+            if(!(await getDoc(ref)).exists()) await setDoc(ref, { members: pair });
+            nav('chat'); setTimeout(() => switchChat(cid), 300);
         };
     </script>
 </body>
