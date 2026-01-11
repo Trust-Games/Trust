@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Trust Games | Total Control</title>
+    <title>Trust Games | Enterprise</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         body { background-color: #050505; color: #e4e4e7; font-family: sans-serif; overflow: hidden; }
@@ -13,119 +13,71 @@
         .tab-btn:hover { background: #18181b; color: white; }
         .tab-btn.active { color: #3b82f6; background: #111113; border-right: 3px solid #3b82f6; }
         
-        /* Modals & Overlays */
-        #game-overlay { display: none; position: fixed; inset: 0; background: black; z-index: 5000; }
+        /* Modals */
         .modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.95); z-index: 100; align-items: center; justify-content: center; padding: 15px; overflow-y: auto; }
+        #game-overlay { display: none; position: fixed; inset: 0; background: black; z-index: 5000; }
         
-        /* Badge UI */
-        .badge { padding: 2px 8px; border-radius: 4px; font-size: 10px; font-weight: 900; text-transform: uppercase; margin-right: 5px; }
-        .badge-owner { background: #facc15; color: black; }
-        .badge-admin { background: #3b82f6; color: white; }
-        .badge-banned { background: #ef4444; color: white; }
-        .verified-icon { color: #3b82f6; font-size: 18px; margin-left: 5px; }
+        /* Message Bubbles */
+        .msg { padding: 10px 14px; border-radius: 18px; margin-bottom: 5px; max-width: 75%; font-size: 14px; line-height: 1.4; }
+        .msg-me { background: #3b82f6; align-self: flex-end; color: white; border-bottom-right-radius: 4px; }
+        .msg-them { background: #27272a; align-self: flex-start; color: #e4e4e7; border-bottom-left-radius: 4px; }
 
-        .admin-input { background: #000; border: 1px solid #27272a; padding: 10px; border-radius: 12px; width: 100%; font-size: 12px; color: white; outline: none; }
-        .admin-input:focus { border-color: #ef4444; }
+        .admin-pill { font-size: 9px; padding: 2px 6px; border-radius: 4px; font-weight: 900; text-transform: uppercase; }
+        .lock-icon { font-size: 10px; margin-left: auto; color: #facc15; }
     </style>
 </head>
 <body>
 
-    <div id="loader" class="fixed inset-0 bg-black z-[6000] flex items-center justify-center font-bold">LOADING SYSTEM...</div>
+    <div id="loader" class="fixed inset-0 bg-black z-[6000] flex items-center justify-center font-bold italic">SYNCING TRUST...</div>
 
     <div id="game-overlay">
-        <button class="fixed top-5 right-5 z-[5001] bg-white/10 hover:bg-white/20 w-12 h-12 rounded-full text-white font-bold backdrop-blur-md border border-white/20" onclick="closeGame()">✕</button>
-        <iframe id="game-frame" src="" class="w-full h-full border-0" allow="autoplay; fullscreen;"></iframe>
+        <button class="fixed top-5 right-5 z-[5001] bg-black/50 w-12 h-12 rounded-full text-white border border-white/10" onclick="closeGame()">✕</button>
+        <iframe id="game-frame" src="" class="w-full h-full border-0"></iframe>
     </div>
 
-    <div id="profile-modal" class="modal" onclick="this.style.display='none'">
-        <div class="bg-[#0c0c0e] p-6 rounded-[2.5rem] w-full max-w-md border border-[#27272a] shadow-2xl" onclick="event.stopPropagation()">
-            
-            <div class="text-center mb-6">
-                <div class="inline-block bg-zinc-900/50 p-6 rounded-3xl border border-zinc-800 mb-4 w-full">
-                    <p class="text-[10px] text-zinc-500 font-black uppercase mb-1">Balance</p>
-                    <p id="p-credits" class="text-4xl font-black text-yellow-500 tracking-tighter">0</p>
-                </div>
-                <div class="flex items-center justify-center">
-                    <h2 id="p-name" class="text-2xl font-black italic uppercase text-white truncate max-w-[200px]">Username</h2>
-                    <span id="p-verified" class="verified-icon hidden">✔</span>
-                </div>
-                <div id="p-badges" class="mt-2 flex justify-center"></div>
-            </div>
-
-            <button id="p-follow-btn" class="w-full py-4 rounded-2xl font-black uppercase text-sm mb-6 bg-blue-600 transition active:scale-95"></button>
-            
-            <div id="god-mode" class="hidden border-t border-zinc-800 pt-6">
-                <p class="text-[10px] text-red-500 font-black uppercase tracking-widest mb-4 text-center">Master Control Panel</p>
-                
-                <div class="grid grid-cols-2 gap-3 mb-3">
-                    <div>
-                        <label class="text-[9px] text-zinc-500 font-bold ml-1 uppercase">Identity</label>
-                        <input id="edit-user" type="text" placeholder="Username" class="admin-input">
-                    </div>
-                    <div>
-                        <label class="text-[9px] text-zinc-500 font-bold ml-1 uppercase">Credits</label>
-                        <input id="edit-cred" type="number" placeholder="Credits" class="admin-input">
-                    </div>
-                </div>
-
-                <div class="grid grid-cols-2 gap-3 mb-4">
-                    <div>
-                        <label class="text-[9px] text-zinc-500 font-bold ml-1 uppercase">Role</label>
-                        <select id="edit-role" class="admin-input">
-                            <option value="user">User</option>
-                            <option value="admin">Admin</option>
-                            <option value="owner">Owner</option>
-                        </select>
-                    </div>
-                    <div>
-                        <label class="text-[9px] text-zinc-500 font-bold ml-1 uppercase">Status</label>
-                        <div class="flex gap-2 mt-1">
-                            <button id="btn-ban" onclick="toggleBan()" class="flex-1 py-2 rounded-lg text-[10px] font-black uppercase border border-red-900/50"></button>
-                            <button id="btn-ver" onclick="toggleVer()" class="flex-1 py-2 rounded-lg text-[10px] font-black uppercase border border-blue-900/50"></button>
-                        </div>
-                    </div>
-                </div>
-
-                <button onclick="commitAdminChanges()" class="w-full bg-white text-black py-4 rounded-2xl font-black uppercase text-xs hover:bg-zinc-200 transition shadow-xl">Commit Database Update</button>
-            </div>
+    <div id="anno-modal" class="modal" onclick="this.style.display='none'">
+        <div class="bg-blue-600 p-8 rounded-[2rem] w-full max-w-sm text-center" onclick="event.stopPropagation()">
+            <p class="text-[10px] font-black uppercase tracking-widest mb-2 opacity-70">New Announcement</p>
+            <h3 id="anno-txt" class="text-xl font-bold italic"></h3>
+            <button onclick="document.getElementById('anno-modal').style.display='none'" class="mt-6 bg-black text-white px-8 py-3 rounded-full font-bold text-sm">Dismiss</button>
         </div>
     </div>
 
     <div id="app-shell" class="flex h-screen">
         <aside class="sidebar">
             <div class="p-6 text-2xl font-black italic text-white tracking-tighter">TRUST</div>
-            <nav class="flex-1 px-2 space-y-1">
+            <nav class="flex-1 px-2 space-y-1 overflow-y-auto">
                 <button onclick="showTab('home')" id="btn-home" class="tab-btn active">🎮 Vault</button>
+                <button onclick="showTab('social')" id="btn-social" class="tab-btn">💬 Chat & Groups</button>
                 <button onclick="showTab('friends')" id="btn-friends" class="tab-btn">👥 Circle</button>
-                <div id="admin-nav" class="hidden"><button onclick="showTab('admin')" id="btn-admin" class="tab-btn text-yellow-500">🛠 Registry</button></div>
+                <div id="admin-nav" class="hidden"><button onclick="showTab('admin')" id="btn-admin" class="tab-btn text-yellow-500">🛠 Control Panel</button></div>
             </nav>
-            <div class="p-4 border-t border-zinc-800 bg-zinc-950">
+            <div class="p-4 border-t border-zinc-800">
                 <p id="my-name" class="font-black text-sm text-white truncate"></p>
-                <p id="my-credits" class="text-yellow-500 text-xs font-bold font-mono"></p>
+                <p id="my-credits" class="text-yellow-500 text-xs font-bold font-mono">0 CR</p>
                 <button onclick="signOut(auth)" class="mt-2 text-[10px] uppercase text-zinc-600 font-bold">Sign Out</button>
             </div>
         </aside>
 
         <main class="flex-1 flex flex-col">
             <header class="p-4 border-b border-zinc-900 bg-[#050505] flex gap-4">
-                <input id="search-bar" oninput="doSearch()" type="text" placeholder="Search players..." class="flex-1 bg-zinc-900 p-4 rounded-2xl border border-zinc-800 outline-none text-sm font-bold focus:border-blue-600 transition">
+                <input id="search-bar" oninput="doSearch()" type="text" placeholder="Search anything..." class="flex-1 bg-zinc-900 p-4 rounded-2xl border border-zinc-800 outline-none text-sm font-bold">
             </header>
-            <div id="main-content" class="flex-1 p-6 overflow-y-auto"></div>
+            <div id="main-content" class="flex-1 p-6 overflow-y-auto bg-[#070708]"></div>
         </main>
     </div>
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
         import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
-        import { getFirestore, doc, getDoc, setDoc, onSnapshot, collection, addDoc, query, where, getDocs, updateDoc, limit, arrayUnion, arrayRemove, deleteDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+        import { getFirestore, doc, getDoc, onSnapshot, collection, addDoc, query, where, getDocs, updateDoc, orderBy, limit, serverTimestamp, arrayUnion } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
         const firebaseConfig = { apiKey: "AIzaSyDV1Iq9F7N152JjXN7goayLLBiES8B4HkU", authDomain: "trust-games-1.firebaseapp.com", projectId: "trust-games-1", storageBucket: "trust-games-1.firebasestorage.app", messagingSenderId: "923318206410", appId: "1:923318206410:web:646cfe42238f9136cb5933" };
         const app = initializeApp(firebaseConfig);
         const auth = getAuth(app);
         const db = getFirestore(app);
 
-        let myData = null, viewingUser = null;
-        let tempBanStatus = false, tempVerStatus = false;
+        let myData = null, activeChat = null;
 
         onAuthStateChanged(auth, (user) => {
             if (user) {
@@ -133,13 +85,21 @@
                 onSnapshot(doc(db, "users", uName), (snap) => {
                     if(!snap.exists()) return;
                     myData = snap.data();
-                    if(myData.is_banned) { alert("ACCOUNT BANNED"); signOut(auth); return; }
                     document.getElementById('my-name').innerText = myData.username;
-                    document.getElementById('my-credits').innerText = `${(myData.credits || 0).toLocaleString()} CR`;
-                    if(myData.role === 'owner' || myData.role === 'admin') document.getElementById('admin-nav').classList.remove('hidden');
+                    document.getElementById('my-credits').innerText = `${myData.credits.toLocaleString()} CR`;
+                    if(['owner','admin'].includes(myData.role)) document.getElementById('admin-nav').classList.remove('hidden');
                     document.getElementById('app-shell').style.display = 'flex';
                     document.getElementById('loader').style.display = 'none';
                     if(!document.getElementById('main-content').innerHTML) showTab('home');
+                });
+
+                // Listen for Announcements
+                onSnapshot(query(collection(db, "broadcasts"), orderBy("time", "desc"), limit(1)), s => {
+                    if(!s.empty) {
+                        const b = s.docs[0].data();
+                        document.getElementById('anno-txt').innerText = b.message;
+                        document.getElementById('anno-modal').style.display = 'flex';
+                    }
                 });
             } else { location.reload(); }
         });
@@ -151,31 +111,132 @@
             main.innerHTML = "";
 
             if(t === 'home') {
-                main.innerHTML = `<div id="s-zone" class="mb-10 hidden"></div><div id="g-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"></div>`;
+                main.innerHTML = `<div id="s-zone" class="mb-8 hidden"></div><div id="g-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"></div>`;
                 const snap = await getDocs(collection(db, "games"));
                 snap.forEach(d => {
                     const g = d.data();
-                    const card = document.createElement('div');
-                    card.className = "bg-zinc-900 rounded-3xl border border-zinc-800 overflow-hidden cursor-pointer hover:scale-[1.02] transition";
-                    card.innerHTML = `<div class="h-40 bg-zinc-800 flex items-center justify-center text-4xl">🎮</div><div class="p-4 font-black italic uppercase tracking-tighter text-white">${g.name}</div>`;
-                    card.onclick = () => { document.getElementById('game-frame').src = g.url; document.getElementById('game-overlay').style.display='block'; };
-                    document.getElementById('g-grid').appendChild(card);
+                    const canPlay = (!g.adminOnly || ['owner','admin'].includes(myData.role)) && (!g.verOnly || myData.is_verified);
+                    if(canPlay) {
+                        const card = document.createElement('div');
+                        card.className = "bg-zinc-900 rounded-[2rem] border border-zinc-800 overflow-hidden cursor-pointer hover:border-blue-500 transition";
+                        card.innerHTML = `<div class="h-40 bg-zinc-800 flex items-center justify-center text-4xl">🎮</div>
+                        <div class="p-5">
+                            <div class="flex items-center gap-2 mb-1">
+                                <span class="font-black italic uppercase text-white">${g.name}</span>
+                                ${g.adminOnly ? '<span class="admin-pill bg-red-600">Admin</span>' : ''}
+                            </div>
+                            <p class="text-[10px] text-zinc-500 font-bold uppercase">${g.genre || 'Classic'}</p>
+                        </div>`;
+                        card.onclick = () => { document.getElementById('game-frame').src = g.url; document.getElementById('game-overlay').style.display='block'; };
+                        document.getElementById('g-grid').appendChild(card);
+                    }
                 });
             }
-            if(t === 'friends') {
-                main.innerHTML = `<div id="f-grid" class="grid grid-cols-2 md:grid-cols-4 gap-4"></div>`;
-                myData.following?.forEach(f => {
-                    document.getElementById('f-grid').innerHTML += `<div onclick="openProfile('${f}')" class="bg-zinc-900 p-6 rounded-3xl border border-zinc-800 text-center cursor-pointer font-black italic uppercase tracking-tighter">${f}</div>`;
-                });
+
+            if(t === 'social') {
+                main.innerHTML = `<div class="flex h-[75vh] bg-zinc-900/40 rounded-[2.5rem] border border-zinc-800 overflow-hidden">
+                    <div class="w-1/3 border-r border-zinc-800 flex flex-col">
+                        <div class="p-4 border-b border-zinc-800 flex justify-between">
+                            <span class="font-black uppercase text-xs">Chats</span>
+                            <button onclick="createGroupPrompt()" class="text-blue-500 font-bold text-xs">+ Group</button>
+                        </div>
+                        <div id="chat-list" class="flex-1 overflow-y-auto"></div>
+                    </div>
+                    <div class="flex-1 flex flex-col bg-black/20">
+                        <div id="chat-win" class="flex-1 p-6 overflow-y-auto flex flex-col"></div>
+                        <div class="p-4 flex gap-2"><input id="msg-in" placeholder="Message..." class="flex-1 bg-black p-4 rounded-2xl border border-zinc-800 text-sm outline-none"><button onclick="sendMsg()" class="bg-blue-600 px-6 rounded-2xl font-bold">SEND</button></div>
+                    </div>
+                </div>`;
+                loadChats();
             }
+
             if(t === 'admin') {
-                main.innerHTML = `<div class="bg-zinc-900 p-8 rounded-[2rem] border border-zinc-800 max-w-md">
-                    <p class="text-[10px] font-black text-blue-500 mb-6 uppercase tracking-widest">Register Game</p>
-                    <input id="add-gn" placeholder="Game Name" class="admin-input mb-2">
-                    <input id="add-gu" placeholder="Iframe URL" class="admin-input mb-6">
-                    <button onclick="addGame()" class="w-full bg-blue-600 py-4 rounded-2xl font-black uppercase text-xs">Add to Vault</button>
+                main.innerHTML = `<div class="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-5xl">
+                    <div class="bg-zinc-900 p-8 rounded-[2.5rem] border border-zinc-800">
+                        <p class="text-[10px] font-black text-blue-500 mb-6 uppercase tracking-widest">Broadcast Announcement</p>
+                        <textarea id="broad-msg" class="w-full bg-black p-4 rounded-2xl border border-zinc-800 text-sm mb-4 h-24" placeholder="Alert all players..."></textarea>
+                        <button onclick="sendBroadcast()" class="w-full bg-blue-600 py-4 rounded-2xl font-black uppercase text-xs">Send Global Alert</button>
+                    </div>
+                    <div class="bg-zinc-900 p-8 rounded-[2.5rem] border border-zinc-800">
+                        <p class="text-[10px] font-black text-yellow-500 mb-6 uppercase tracking-widest">Register / Edit Game</p>
+                        <div class="space-y-2">
+                            <input id="g-name" placeholder="Title" class="w-full bg-black p-3 rounded-xl border border-zinc-800 text-sm">
+                            <input id="g-url" placeholder="URL" class="w-full bg-black p-3 rounded-xl border border-zinc-800 text-sm">
+                            <input id="g-genre" placeholder="Genre (e.g. Shooter)" class="w-full bg-black p-3 rounded-xl border border-zinc-800 text-sm">
+                            <div class="flex gap-4 p-2">
+                                <label class="text-[10px] font-bold"><input type="checkbox" id="g-admin"> Admin Only</label>
+                                <label class="text-[10px] font-bold"><input type="checkbox" id="g-ver"> Verified Only</label>
+                            </div>
+                            <button onclick="saveGame()" class="w-full bg-white text-black py-4 rounded-2xl font-black uppercase text-xs">Publish to Vault</button>
+                        </div>
+                    </div>
                 </div>`;
             }
+        };
+
+        // SOCIAL ENGINE
+        window.loadChats = () => {
+            const q = query(collection(db, "chats"), where("members", "array-contains", myData.username));
+            onSnapshot(q, s => {
+                const list = document.getElementById('chat-list');
+                if(!list) return;
+                list.innerHTML = "";
+                s.forEach(d => {
+                    const c = d.data();
+                    const name = c.isGroup ? `🛡 ${c.groupName}` : c.members.find(m => m !== myData.username);
+                    list.innerHTML += `<div onclick="openChat('${d.id}')" class="p-4 border-b border-white/5 cursor-pointer hover:bg-white/5 font-bold uppercase text-[10px] tracking-tighter">${name}</div>`;
+                });
+            });
+        };
+
+        window.openChat = (id) => {
+            activeChat = id;
+            onSnapshot(query(collection(db, "chats", id, "messages"), orderBy("time", "asc")), s => {
+                const win = document.getElementById('chat-win');
+                if(!win) return;
+                win.innerHTML = "";
+                s.forEach(d => {
+                    const m = d.data();
+                    const isMe = m.sender === myData.username;
+                    win.innerHTML += `<div class="flex flex-col ${isMe ? 'items-end' : 'items-start'} mb-2">
+                        <span class="text-[8px] font-bold text-zinc-600 uppercase mb-1">${m.sender}</span>
+                        <div class="msg ${isMe ? 'msg-me' : 'msg-them'}">${m.text}</div>
+                    </div>`;
+                });
+                win.scrollTop = win.scrollHeight;
+            });
+        };
+
+        window.sendMsg = async () => {
+            const val = document.getElementById('msg-in').value.trim();
+            if(!val || !activeChat) return;
+            await addDoc(collection(db, "chats", activeChat, "messages"), { text: val, sender: myData.username, time: serverTimestamp() });
+            document.getElementById('msg-in').value = "";
+        };
+
+        window.createGroupPrompt = async () => {
+            const gName = prompt("Enter Group Name:");
+            if(!gName) return;
+            await addDoc(collection(db, "chats"), { groupName: gName, isGroup: true, members: [myData.username], createdBy: myData.username });
+        };
+
+        // ADMIN ACTIONS
+        window.sendBroadcast = async () => {
+            await addDoc(collection(db, "broadcasts"), { message: document.getElementById('broad-msg').value, time: serverTimestamp() });
+            alert("Sent!");
+        };
+
+        window.saveGame = async () => {
+            const name = document.getElementById('g-name').value;
+            await setDoc(doc(db, "games", name), {
+                name: name,
+                url: document.getElementById('g-url').value,
+                genre: document.getElementById('g-genre').value,
+                adminOnly: document.getElementById('g-admin').checked,
+                verOnly: document.getElementById('g-ver').checked
+            });
+            alert("Game Updated!");
+            showTab('home');
         };
 
         window.doSearch = async () => {
@@ -186,87 +247,11 @@
             zone.innerHTML = `<div id="s-grid" class="flex flex-wrap gap-2"></div>`;
             const snap = await getDocs(query(collection(db, "users"), where("username", ">=", val), where("username", "<=", val + "\uf8ff"), limit(6)));
             snap.forEach(d => {
-                document.getElementById('s-grid').innerHTML += `<div onclick="openProfile('${d.id}')" class="bg-zinc-800 px-6 py-3 rounded-2xl cursor-pointer border border-zinc-700 font-black italic uppercase text-[10px] tracking-tighter hover:bg-zinc-700">${d.id}</div>`;
+                zone.innerHTML += `<div onclick="openProfile('${d.id}')" class="bg-zinc-800 px-6 py-3 rounded-2xl cursor-pointer font-black uppercase text-[10px]">${d.id}</div>`;
             });
         };
 
-        window.openProfile = async (n) => {
-            const s = await getDoc(doc(db, "users", n));
-            viewingUser = s.data();
-            document.getElementById('p-name').innerText = viewingUser.username;
-            document.getElementById('p-credits').innerText = (viewingUser.credits || 0).toLocaleString();
-            
-            // UI Icons
-            document.getElementById('p-verified').classList.toggle('hidden', !viewingUser.is_verified);
-            const bContainer = document.getElementById('p-badges');
-            bContainer.innerHTML = "";
-            if(viewingUser.is_banned) bContainer.innerHTML += `<span class="badge badge-banned">Banned</span>`;
-            if(viewingUser.role === 'owner') bContainer.innerHTML += `<span class="badge badge-owner">Owner</span>`;
-            else if(viewingUser.role === 'admin') bContainer.innerHTML += `<span class="badge badge-admin">Admin</span>`;
-
-            // Follow Logic
-            const isF = myData.following?.includes(n);
-            const btn = document.getElementById('p-follow-btn');
-            btn.innerText = isF ? 'Unfollow' : 'Follow Player';
-            btn.className = `w-full py-4 rounded-2xl font-black uppercase text-sm mb-6 transition ${isF ? 'bg-zinc-800 text-zinc-500' : 'bg-blue-600 text-white'}`;
-            btn.onclick = () => toggleFollow(n, isF);
-
-            // GOD MODE LOAD
-            if(myData.role === 'owner' || myData.role === 'admin') {
-                document.getElementById('god-mode').classList.remove('hidden');
-                document.getElementById('edit-user').value = viewingUser.username;
-                document.getElementById('edit-cred').value = viewingUser.credits;
-                document.getElementById('edit-role').value = viewingUser.role || 'user';
-                tempBanStatus = viewingUser.is_banned || false;
-                tempVerStatus = viewingUser.is_verified || false;
-                refreshAdminBtns();
-            } else { document.getElementById('god-mode').classList.add('hidden'); }
-            
-            document.getElementById('profile-modal').style.display = 'flex';
-        };
-
-        window.refreshAdminBtns = () => {
-            const b = document.getElementById('btn-ban');
-            const v = document.getElementById('btn-ver');
-            b.innerText = tempBanStatus ? 'Unban' : 'Ban';
-            b.className = `flex-1 py-2 rounded-lg text-[10px] font-black uppercase border ${tempBanStatus ? 'bg-red-600 text-white' : 'border-red-600 text-red-600'}`;
-            v.innerText = tempVerStatus ? 'Unverify' : 'Verify';
-            v.className = `flex-1 py-2 rounded-lg text-[10px] font-black uppercase border ${tempVerStatus ? 'bg-blue-600 text-white' : 'border-blue-600 text-blue-600'}`;
-        };
-
-        window.toggleBan = () => { tempBanStatus = !tempBanStatus; refreshAdminBtns(); };
-        window.toggleVer = () => { tempVerStatus = !tempVerStatus; refreshAdminBtns(); };
-
-        window.commitAdminChanges = async () => {
-            const newName = document.getElementById('edit-user').value.toLowerCase();
-            const updates = {
-                credits: parseInt(document.getElementById('edit-cred').value),
-                role: document.getElementById('edit-role').value,
-                is_banned: tempBanStatus,
-                is_verified: tempVerStatus,
-                username: newName
-            };
-
-            // If username changed, we must move the document
-            if(newName !== viewingUser.username) {
-                const oldRef = doc(db, "users", viewingUser.username);
-                await setDoc(doc(db, "users", newName), { ...viewingUser, ...updates });
-                await deleteDoc(oldRef);
-            } else {
-                await updateDoc(doc(db, "users", viewingUser.username), updates);
-            }
-            
-            alert("Database Synced Successfully.");
-            document.getElementById('profile-modal').style.display = 'none';
-        };
-
-        window.toggleFollow = async (n, isF) => {
-            await updateDoc(doc(db, "users", myData.username), { following: isF ? arrayRemove(n) : arrayUnion(n) });
-            openProfile(n);
-        };
-
-        window.closeGame = () => { document.getElementById('game-frame').src = ""; document.getElementById('game-overlay').style.display = 'none'; };
-        window.addGame = async () => { await addDoc(collection(db, "games"), { name: document.getElementById('add-gn').value, url: document.getElementById('add-gu').value }); showTab('home'); };
+        window.closeGame = () => { document.getElementById('game-frame').src = ""; document.getElementById('game-overlay').style.display='none'; };
         window.signOut = signOut;
     </script>
 </body>
