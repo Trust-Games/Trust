@@ -3,56 +3,90 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Trust Games | High Speed</title>
+    <title>Trust Games | Total Control</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         body { background-color: #050505; color: #e4e4e7; font-family: sans-serif; overflow: hidden; }
         #app-shell { display: none; height: 100vh; width: 100vw; }
         .sidebar { width: 250px; background: #09090b; border-right: 1px solid #18181b; display: flex; flex-direction: column; }
-        .tab-btn { width: 100%; padding: 15px; text-align: left; color: #a1a1aa; transition: 0.2s; font-size: 14px; font-weight: 600; }
+        .tab-btn { width: 100%; padding: 15px; text-align: left; color: #a1a1aa; transition: 0.2s; font-size: 13px; font-weight: 700; text-transform: uppercase; }
         .tab-btn:hover { background: #18181b; color: white; }
-        .tab-btn.active { color: #3b82f6; background: #111113; border-right: 2px solid #3b82f6; }
+        .tab-btn.active { color: #3b82f6; background: #111113; border-right: 3px solid #3b82f6; }
         
-        /* Game Modal Styles */
+        /* Modals & Overlays */
         #game-overlay { display: none; position: fixed; inset: 0; background: black; z-index: 5000; }
-        #game-frame { width: 100%; height: 100%; border: none; }
-        .close-game { position: fixed; top: 20px; right: 20px; z-index: 5001; background: rgba(0,0,0,0.6); color: white; width: 45px; height: 45px; border-radius: 50%; font-size: 20px; font-weight: bold; border: 1px solid rgba(255,255,255,0.2); backdrop-filter: blur(5px); }
+        .modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.95); z-index: 100; align-items: center; justify-content: center; padding: 15px; overflow-y: auto; }
         
-        /* Badges */
-        .badge-owner { background: linear-gradient(to right, #facc15, #eab308); color: black; padding: 2px 8px; border-radius: 6px; font-size: 10px; font-weight: 900; text-transform: uppercase; }
-        .verified-icon { color: #3b82f6; margin-left: 4px; font-size: 18px; }
-        
-        .modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.9); z-index: 100; align-items: center; justify-content: center; padding: 20px; }
-        .game-card { background: #111113; border: 1px solid #1c1c1e; border-radius: 24px; cursor: pointer; transition: 0.3s; overflow: hidden; }
-        .game-card:hover { border-color: #3b82f6; transform: translateY(-5px); box-shadow: 0 10px 30px rgba(59,130,246,0.1); }
+        /* Badge UI */
+        .badge { padding: 2px 8px; border-radius: 4px; font-size: 10px; font-weight: 900; text-transform: uppercase; margin-right: 5px; }
+        .badge-owner { background: #facc15; color: black; }
+        .badge-admin { background: #3b82f6; color: white; }
+        .badge-banned { background: #ef4444; color: white; }
+        .verified-icon { color: #3b82f6; font-size: 18px; margin-left: 5px; }
+
+        .admin-input { background: #000; border: 1px solid #27272a; padding: 10px; border-radius: 12px; width: 100%; font-size: 12px; color: white; outline: none; }
+        .admin-input:focus { border-color: #ef4444; }
     </style>
 </head>
 <body>
 
-    <div id="loader" class="fixed inset-0 bg-black z-[6000] flex items-center justify-center font-bold">BOOTING SYSTEM...</div>
+    <div id="loader" class="fixed inset-0 bg-black z-[6000] flex items-center justify-center font-bold">LOADING SYSTEM...</div>
 
     <div id="game-overlay">
-        <button class="close-game" onclick="closeGame()">✕</button>
-        <iframe id="game-frame" src="" allow="autoplay; fullscreen; keyboard"></iframe>
+        <button class="fixed top-5 right-5 z-[5001] bg-white/10 hover:bg-white/20 w-12 h-12 rounded-full text-white font-bold backdrop-blur-md border border-white/20" onclick="closeGame()">✕</button>
+        <iframe id="game-frame" src="" class="w-full h-full border-0" allow="autoplay; fullscreen;"></iframe>
     </div>
 
     <div id="profile-modal" class="modal" onclick="this.style.display='none'">
-        <div class="bg-[#0f0f11] p-6 rounded-[2.5rem] w-full max-w-sm border border-[#27272a]" onclick="event.stopPropagation()">
-            <div class="bg-zinc-800/20 border border-zinc-800 p-6 rounded-3xl text-center mb-6">
-                <p class="text-[10px] text-zinc-500 uppercase font-black tracking-widest mb-1">Credits</p>
-                <p id="p-credits" class="text-4xl font-black text-yellow-500">0</p>
-            </div>
+        <div class="bg-[#0c0c0e] p-6 rounded-[2.5rem] w-full max-w-md border border-[#27272a] shadow-2xl" onclick="event.stopPropagation()">
+            
             <div class="text-center mb-6">
+                <div class="inline-block bg-zinc-900/50 p-6 rounded-3xl border border-zinc-800 mb-4 w-full">
+                    <p class="text-[10px] text-zinc-500 font-black uppercase mb-1">Balance</p>
+                    <p id="p-credits" class="text-4xl font-black text-yellow-500 tracking-tighter">0</p>
+                </div>
                 <div class="flex items-center justify-center">
-                    <h2 id="p-name" class="text-2xl font-black italic uppercase">Username</h2>
+                    <h2 id="p-name" class="text-2xl font-black italic uppercase text-white truncate max-w-[200px]">Username</h2>
                     <span id="p-verified" class="verified-icon hidden">✔</span>
                 </div>
-                <div id="p-badge-container" class="mt-2"></div>
+                <div id="p-badges" class="mt-2 flex justify-center"></div>
             </div>
-            <button id="p-follow-btn" class="w-full py-4 rounded-2xl font-black uppercase text-sm mb-4 bg-blue-600 text-white"></button>
-            <div id="admin-quick-edit" class="hidden border-t border-zinc-800 pt-6 space-y-3">
-                <input id="edit-c" type="number" class="w-full bg-black p-4 rounded-xl border border-zinc-800 text-sm">
-                <button onclick="saveAdminQuick()" class="w-full bg-white text-black py-3 rounded-xl font-black text-xs">UPDATE CREDITS</button>
+
+            <button id="p-follow-btn" class="w-full py-4 rounded-2xl font-black uppercase text-sm mb-6 bg-blue-600 transition active:scale-95"></button>
+            
+            <div id="god-mode" class="hidden border-t border-zinc-800 pt-6">
+                <p class="text-[10px] text-red-500 font-black uppercase tracking-widest mb-4 text-center">Master Control Panel</p>
+                
+                <div class="grid grid-cols-2 gap-3 mb-3">
+                    <div>
+                        <label class="text-[9px] text-zinc-500 font-bold ml-1 uppercase">Identity</label>
+                        <input id="edit-user" type="text" placeholder="Username" class="admin-input">
+                    </div>
+                    <div>
+                        <label class="text-[9px] text-zinc-500 font-bold ml-1 uppercase">Credits</label>
+                        <input id="edit-cred" type="number" placeholder="Credits" class="admin-input">
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-2 gap-3 mb-4">
+                    <div>
+                        <label class="text-[9px] text-zinc-500 font-bold ml-1 uppercase">Role</label>
+                        <select id="edit-role" class="admin-input">
+                            <option value="user">User</option>
+                            <option value="admin">Admin</option>
+                            <option value="owner">Owner</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="text-[9px] text-zinc-500 font-bold ml-1 uppercase">Status</label>
+                        <div class="flex gap-2 mt-1">
+                            <button id="btn-ban" onclick="toggleBan()" class="flex-1 py-2 rounded-lg text-[10px] font-black uppercase border border-red-900/50"></button>
+                            <button id="btn-ver" onclick="toggleVer()" class="flex-1 py-2 rounded-lg text-[10px] font-black uppercase border border-blue-900/50"></button>
+                        </div>
+                    </div>
+                </div>
+
+                <button onclick="commitAdminChanges()" class="w-full bg-white text-black py-4 rounded-2xl font-black uppercase text-xs hover:bg-zinc-200 transition shadow-xl">Commit Database Update</button>
             </div>
         </div>
     </div>
@@ -60,11 +94,10 @@
     <div id="app-shell" class="flex h-screen">
         <aside class="sidebar">
             <div class="p-6 text-2xl font-black italic text-white tracking-tighter">TRUST</div>
-            <nav class="flex-1 space-y-1 px-2">
+            <nav class="flex-1 px-2 space-y-1">
                 <button onclick="showTab('home')" id="btn-home" class="tab-btn active">🎮 Vault</button>
                 <button onclick="showTab('friends')" id="btn-friends" class="tab-btn">👥 Circle</button>
-                <button id="btn-messages" class="tab-btn opacity-50">📩 Inbox</button>
-                <div id="admin-nav" class="hidden"><button onclick="showTab('admin')" id="btn-admin" class="tab-btn text-yellow-500">🛠 Admin</button></div>
+                <div id="admin-nav" class="hidden"><button onclick="showTab('admin')" id="btn-admin" class="tab-btn text-yellow-500">🛠 Registry</button></div>
             </nav>
             <div class="p-4 border-t border-zinc-800 bg-zinc-950">
                 <p id="my-name" class="font-black text-sm text-white truncate"></p>
@@ -73,9 +106,9 @@
             </div>
         </aside>
 
-        <main class="flex-1 flex flex-col bg-[#070708]">
-            <header class="p-4 border-b border-zinc-900 bg-[#050505]">
-                <input id="search-bar" oninput="doGlobalSearch()" type="text" placeholder="Search players..." class="w-full max-w-md bg-zinc-900/50 p-4 rounded-2xl border border-zinc-800 outline-none text-sm font-bold">
+        <main class="flex-1 flex flex-col">
+            <header class="p-4 border-b border-zinc-900 bg-[#050505] flex gap-4">
+                <input id="search-bar" oninput="doSearch()" type="text" placeholder="Search players..." class="flex-1 bg-zinc-900 p-4 rounded-2xl border border-zinc-800 outline-none text-sm font-bold focus:border-blue-600 transition">
             </header>
             <div id="main-content" class="flex-1 p-6 overflow-y-auto"></div>
         </main>
@@ -84,24 +117,25 @@
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
         import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
-        import { getFirestore, doc, getDoc, onSnapshot, collection, addDoc, query, where, getDocs, updateDoc, limit, arrayUnion, arrayRemove } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+        import { getFirestore, doc, getDoc, setDoc, onSnapshot, collection, addDoc, query, where, getDocs, updateDoc, limit, arrayUnion, arrayRemove, deleteDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
         const firebaseConfig = { apiKey: "AIzaSyDV1Iq9F7N152JjXN7goayLLBiES8B4HkU", authDomain: "trust-games-1.firebaseapp.com", projectId: "trust-games-1", storageBucket: "trust-games-1.firebasestorage.app", messagingSenderId: "923318206410", appId: "1:923318206410:web:646cfe42238f9136cb5933" };
         const app = initializeApp(firebaseConfig);
         const auth = getAuth(app);
         const db = getFirestore(app);
 
-        let myData = null;
-        let viewingUser = null;
+        let myData = null, viewingUser = null;
+        let tempBanStatus = false, tempVerStatus = false;
 
-        onAuthStateChanged(auth, async (user) => {
+        onAuthStateChanged(auth, (user) => {
             if (user) {
                 const uName = user.email.split('@')[0];
                 onSnapshot(doc(db, "users", uName), (snap) => {
                     if(!snap.exists()) return;
                     myData = snap.data();
+                    if(myData.is_banned) { alert("ACCOUNT BANNED"); signOut(auth); return; }
                     document.getElementById('my-name').innerText = myData.username;
-                    document.getElementById('my-credits').innerText = `${(myData.credits || 0).toLocaleString()} Credits`;
+                    document.getElementById('my-credits').innerText = `${(myData.credits || 0).toLocaleString()} CR`;
                     if(myData.role === 'owner' || myData.role === 'admin') document.getElementById('admin-nav').classList.remove('hidden');
                     document.getElementById('app-shell').style.display = 'flex';
                     document.getElementById('loader').style.display = 'none';
@@ -114,68 +148,45 @@
             document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
             if(document.getElementById('btn-'+t)) document.getElementById('btn-'+t).classList.add('active');
             const main = document.getElementById('main-content');
-            main.innerHTML = `<div class="text-zinc-700 font-bold uppercase text-[10px]">Updating...</div>`;
+            main.innerHTML = "";
 
             if(t === 'home') {
-                main.innerHTML = `<div id="search-zone" class="mb-10 hidden"></div><div id="game-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"></div>`;
+                main.innerHTML = `<div id="s-zone" class="mb-10 hidden"></div><div id="g-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"></div>`;
                 const snap = await getDocs(collection(db, "games"));
-                const gGrid = document.getElementById('game-grid');
-                gGrid.innerHTML = "";
                 snap.forEach(d => {
                     const g = d.data();
                     const card = document.createElement('div');
-                    card.className = "game-card";
-                    card.innerHTML = `
-                        <div class="h-48 bg-zinc-800 flex items-center justify-center text-4xl">🎮</div>
-                        <div class="p-5 flex justify-between items-center">
-                            <span class="font-black uppercase italic tracking-tighter text-white">${g.name}</span>
-                            <span class="text-[10px] font-bold bg-blue-600/20 text-blue-500 px-3 py-1 rounded-full uppercase">Play Now</span>
-                        </div>`;
-                    card.onclick = () => openGame(g.url);
-                    gGrid.appendChild(card);
+                    card.className = "bg-zinc-900 rounded-3xl border border-zinc-800 overflow-hidden cursor-pointer hover:scale-[1.02] transition";
+                    card.innerHTML = `<div class="h-40 bg-zinc-800 flex items-center justify-center text-4xl">🎮</div><div class="p-4 font-black italic uppercase tracking-tighter text-white">${g.name}</div>`;
+                    card.onclick = () => { document.getElementById('game-frame').src = g.url; document.getElementById('game-overlay').style.display='block'; };
+                    document.getElementById('g-grid').appendChild(card);
                 });
             }
             if(t === 'friends') {
-                main.innerHTML = `<h2 class="text-xl font-black mb-6 italic uppercase">Friends</h2><div id="f-grid" class="grid grid-cols-2 md:grid-cols-4 gap-4"></div>`;
-                if(!myData.following || myData.following.length === 0) { document.getElementById('f-grid').innerHTML = `<p class="text-zinc-500 text-sm">No followers.</p>`; return; }
-                myData.following.forEach(f => {
+                main.innerHTML = `<div id="f-grid" class="grid grid-cols-2 md:grid-cols-4 gap-4"></div>`;
+                myData.following?.forEach(f => {
                     document.getElementById('f-grid').innerHTML += `<div onclick="openProfile('${f}')" class="bg-zinc-900 p-6 rounded-3xl border border-zinc-800 text-center cursor-pointer font-black italic uppercase tracking-tighter">${f}</div>`;
                 });
             }
             if(t === 'admin') {
                 main.innerHTML = `<div class="bg-zinc-900 p-8 rounded-[2rem] border border-zinc-800 max-w-md">
-                    <p class="text-[10px] font-black text-blue-500 mb-6 uppercase tracking-widest">Add Game</p>
-                    <input id="add-gn" placeholder="Game Name" class="w-full bg-black p-4 rounded-2xl border border-zinc-800 mb-2 font-bold outline-none">
-                    <input id="add-gu" placeholder="Iframe URL" class="w-full bg-black p-4 rounded-2xl border border-zinc-800 mb-6 font-bold outline-none">
-                    <button onclick="adminAddGame()" class="w-full bg-blue-600 py-4 rounded-2xl font-black uppercase text-sm">Add to Vault</button>
+                    <p class="text-[10px] font-black text-blue-500 mb-6 uppercase tracking-widest">Register Game</p>
+                    <input id="add-gn" placeholder="Game Name" class="admin-input mb-2">
+                    <input id="add-gu" placeholder="Iframe URL" class="admin-input mb-6">
+                    <button onclick="addGame()" class="w-full bg-blue-600 py-4 rounded-2xl font-black uppercase text-xs">Add to Vault</button>
                 </div>`;
             }
         };
 
-        window.openGame = (url) => {
-            const overlay = document.getElementById('game-overlay');
-            const frame = document.getElementById('game-frame');
-            frame.src = url;
-            overlay.style.display = 'block';
-        };
-
-        window.closeGame = () => {
-            const overlay = document.getElementById('game-overlay');
-            const frame = document.getElementById('game-frame');
-            frame.src = "";
-            overlay.style.display = 'none';
-        };
-
-        window.doGlobalSearch = async () => {
+        window.doSearch = async () => {
             const val = document.getElementById('search-bar').value.toLowerCase();
-            const zone = document.getElementById('search-zone');
+            const zone = document.getElementById('s-zone');
             if(!val) { zone.classList.add('hidden'); return; }
             zone.classList.remove('hidden');
             zone.innerHTML = `<div id="s-grid" class="flex flex-wrap gap-2"></div>`;
-            const q = query(collection(db, "users"), where("username", ">=", val), where("username", "<=", val + "\uf8ff"), limit(6));
-            const snap = await getDocs(q);
+            const snap = await getDocs(query(collection(db, "users"), where("username", ">=", val), where("username", "<=", val + "\uf8ff"), limit(6)));
             snap.forEach(d => {
-                document.getElementById('s-grid').innerHTML += `<div onclick="openProfile('${d.id}')" class="bg-zinc-800 px-6 py-3 rounded-2xl cursor-pointer border border-zinc-700 font-black italic uppercase text-xs tracking-tighter hover:bg-zinc-700">${d.id}</div>`;
+                document.getElementById('s-grid').innerHTML += `<div onclick="openProfile('${d.id}')" class="bg-zinc-800 px-6 py-3 rounded-2xl cursor-pointer border border-zinc-700 font-black italic uppercase text-[10px] tracking-tighter hover:bg-zinc-700">${d.id}</div>`;
             });
         };
 
@@ -184,39 +195,78 @@
             viewingUser = s.data();
             document.getElementById('p-name').innerText = viewingUser.username;
             document.getElementById('p-credits').innerText = (viewingUser.credits || 0).toLocaleString();
-            viewingUser.is_verified ? document.getElementById('p-verified').classList.remove('hidden') : document.getElementById('p-verified').classList.add('hidden');
-            const bContainer = document.getElementById('p-badge-container');
-            bContainer.innerHTML = viewingUser.role === 'owner' ? `<span class="badge-owner">Owner</span>` : '';
+            
+            // UI Icons
+            document.getElementById('p-verified').classList.toggle('hidden', !viewingUser.is_verified);
+            const bContainer = document.getElementById('p-badges');
+            bContainer.innerHTML = "";
+            if(viewingUser.is_banned) bContainer.innerHTML += `<span class="badge badge-banned">Banned</span>`;
+            if(viewingUser.role === 'owner') bContainer.innerHTML += `<span class="badge badge-owner">Owner</span>`;
+            else if(viewingUser.role === 'admin') bContainer.innerHTML += `<span class="badge badge-admin">Admin</span>`;
+
+            // Follow Logic
             const isF = myData.following?.includes(n);
             const btn = document.getElementById('p-follow-btn');
             btn.innerText = isF ? 'Unfollow' : 'Follow Player';
-            btn.className = `w-full py-4 rounded-2xl font-black uppercase text-sm mb-4 transition ${isF ? 'bg-zinc-800 text-zinc-500' : 'bg-blue-600 text-white'}`;
-            btn.onclick = () => toggleFollowAction(n, isF);
+            btn.className = `w-full py-4 rounded-2xl font-black uppercase text-sm mb-6 transition ${isF ? 'bg-zinc-800 text-zinc-500' : 'bg-blue-600 text-white'}`;
+            btn.onclick = () => toggleFollow(n, isF);
+
+            // GOD MODE LOAD
             if(myData.role === 'owner' || myData.role === 'admin') {
-                document.getElementById('admin-quick-edit').classList.remove('hidden');
-                document.getElementById('edit-c').value = viewingUser.credits;
-            } else { document.getElementById('admin-quick-edit').classList.add('hidden'); }
+                document.getElementById('god-mode').classList.remove('hidden');
+                document.getElementById('edit-user').value = viewingUser.username;
+                document.getElementById('edit-cred').value = viewingUser.credits;
+                document.getElementById('edit-role').value = viewingUser.role || 'user';
+                tempBanStatus = viewingUser.is_banned || false;
+                tempVerStatus = viewingUser.is_verified || false;
+                refreshAdminBtns();
+            } else { document.getElementById('god-mode').classList.add('hidden'); }
+            
             document.getElementById('profile-modal').style.display = 'flex';
         };
 
-        window.saveAdminQuick = async () => {
-            await updateDoc(doc(db, "users", viewingUser.username), { credits: parseInt(document.getElementById('edit-c').value) });
+        window.refreshAdminBtns = () => {
+            const b = document.getElementById('btn-ban');
+            const v = document.getElementById('btn-ver');
+            b.innerText = tempBanStatus ? 'Unban' : 'Ban';
+            b.className = `flex-1 py-2 rounded-lg text-[10px] font-black uppercase border ${tempBanStatus ? 'bg-red-600 text-white' : 'border-red-600 text-red-600'}`;
+            v.innerText = tempVerStatus ? 'Unverify' : 'Verify';
+            v.className = `flex-1 py-2 rounded-lg text-[10px] font-black uppercase border ${tempVerStatus ? 'bg-blue-600 text-white' : 'border-blue-600 text-blue-600'}`;
+        };
+
+        window.toggleBan = () => { tempBanStatus = !tempBanStatus; refreshAdminBtns(); };
+        window.toggleVer = () => { tempVerStatus = !tempVerStatus; refreshAdminBtns(); };
+
+        window.commitAdminChanges = async () => {
+            const newName = document.getElementById('edit-user').value.toLowerCase();
+            const updates = {
+                credits: parseInt(document.getElementById('edit-cred').value),
+                role: document.getElementById('edit-role').value,
+                is_banned: tempBanStatus,
+                is_verified: tempVerStatus,
+                username: newName
+            };
+
+            // If username changed, we must move the document
+            if(newName !== viewingUser.username) {
+                const oldRef = doc(db, "users", viewingUser.username);
+                await setDoc(doc(db, "users", newName), { ...viewingUser, ...updates });
+                await deleteDoc(oldRef);
+            } else {
+                await updateDoc(doc(db, "users", viewingUser.username), updates);
+            }
+            
+            alert("Database Synced Successfully.");
             document.getElementById('profile-modal').style.display = 'none';
         };
 
-        window.toggleFollowAction = async (n, isF) => {
+        window.toggleFollow = async (n, isF) => {
             await updateDoc(doc(db, "users", myData.username), { following: isF ? arrayRemove(n) : arrayUnion(n) });
             openProfile(n);
         };
 
-        window.adminAddGame = async () => {
-            const n = document.getElementById('add-gn').value;
-            const u = document.getElementById('add-gu').value;
-            if(!n || !u) return;
-            await addDoc(collection(db, "games"), { name: n, url: u });
-            showTab('home');
-        };
-
+        window.closeGame = () => { document.getElementById('game-frame').src = ""; document.getElementById('game-overlay').style.display = 'none'; };
+        window.addGame = async () => { await addDoc(collection(db, "games"), { name: document.getElementById('add-gn').value, url: document.getElementById('add-gu').value }); showTab('home'); };
         window.signOut = signOut;
     </script>
 </body>
