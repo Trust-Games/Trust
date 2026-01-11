@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Trust Games | Elite</title>
+    <title>Trust Games | High Speed</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         body { background-color: #050505; color: #e4e4e7; font-family: sans-serif; overflow: hidden; }
@@ -12,66 +12,63 @@
         .tab-btn { width: 100%; padding: 15px; text-align: left; color: #a1a1aa; transition: 0.2s; font-size: 14px; font-weight: 600; }
         .tab-btn:hover { background: #18181b; color: white; }
         .tab-btn.active { color: #3b82f6; background: #111113; border-right: 2px solid #3b82f6; }
-        .modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.9); z-index: 100; align-items: center; justify-content: center; padding: 20px; }
         
-        /* Badges & Icons */
-        .badge-owner { background: linear-gradient(to right, #facc15, #eab308); color: black; padding: 2px 8px; border-radius: 6px; font-size: 10px; font-weight: 900; text-transform: uppercase; margin-left: 8px; }
-        .badge-admin { background: #3b82f6; color: white; padding: 2px 8px; border-radius: 6px; font-size: 10px; font-weight: 900; text-transform: uppercase; margin-left: 8px; }
+        /* Game Modal Styles */
+        #game-overlay { display: none; position: fixed; inset: 0; background: black; z-index: 5000; }
+        #game-frame { width: 100%; height: 100%; border: none; }
+        .close-game { position: fixed; top: 20px; right: 20px; z-index: 5001; background: rgba(0,0,0,0.6); color: white; width: 45px; height: 45px; border-radius: 50%; font-size: 20px; font-weight: bold; border: 1px solid rgba(255,255,255,0.2); backdrop-filter: blur(5px); }
+        
+        /* Badges */
+        .badge-owner { background: linear-gradient(to right, #facc15, #eab308); color: black; padding: 2px 8px; border-radius: 6px; font-size: 10px; font-weight: 900; text-transform: uppercase; }
         .verified-icon { color: #3b82f6; margin-left: 4px; font-size: 18px; }
         
-        /* Credit Card Top */
-        .credit-header { background: linear-gradient(135deg, #1c1c1e 0%, #0a0a0a 100%); border: 1px solid #27272a; padding: 24px; border-radius: 24px; text-align: center; margin-bottom: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
+        .modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.9); z-index: 100; align-items: center; justify-content: center; padding: 20px; }
+        .game-card { background: #111113; border: 1px solid #1c1c1e; border-radius: 24px; cursor: pointer; transition: 0.3s; overflow: hidden; }
+        .game-card:hover { border-color: #3b82f6; transform: translateY(-5px); box-shadow: 0 10px 30px rgba(59,130,246,0.1); }
     </style>
 </head>
 <body>
 
-    <div id="loader" class="fixed inset-0 bg-black z-[200] flex items-center justify-center font-bold">BOOTING SYSTEM...</div>
+    <div id="loader" class="fixed inset-0 bg-black z-[6000] flex items-center justify-center font-bold">BOOTING SYSTEM...</div>
+
+    <div id="game-overlay">
+        <button class="close-game" onclick="closeGame()">✕</button>
+        <iframe id="game-frame" src="" allow="autoplay; fullscreen; keyboard"></iframe>
+    </div>
 
     <div id="profile-modal" class="modal" onclick="this.style.display='none'">
         <div class="bg-[#0f0f11] p-6 rounded-[2.5rem] w-full max-w-sm border border-[#27272a]" onclick="event.stopPropagation()">
-            
-            <div class="credit-header">
-                <p class="text-[10px] text-zinc-500 uppercase font-black tracking-widest mb-1">Available Balance</p>
-                <p id="p-credits" class="text-4xl font-black text-yellow-500 tracking-tighter">0</p>
-                <p class="text-xs text-yellow-600/50 font-bold uppercase mt-1">Trust Credits</p>
+            <div class="bg-zinc-800/20 border border-zinc-800 p-6 rounded-3xl text-center mb-6">
+                <p class="text-[10px] text-zinc-500 uppercase font-black tracking-widest mb-1">Credits</p>
+                <p id="p-credits" class="text-4xl font-black text-yellow-500">0</p>
             </div>
-
-            <div class="px-2 mb-6 text-center">
-                <div class="flex items-center justify-center mb-1">
-                    <h2 id="p-name" class="text-2xl font-black italic tracking-tighter text-white uppercase">Username</h2>
+            <div class="text-center mb-6">
+                <div class="flex items-center justify-center">
+                    <h2 id="p-name" class="text-2xl font-black italic uppercase">Username</h2>
                     <span id="p-verified" class="verified-icon hidden">✔</span>
                 </div>
-                <div id="p-badge-container" class="flex justify-center mt-1"></div>
+                <div id="p-badge-container" class="mt-2"></div>
             </div>
-
-            <button id="p-follow-btn" class="w-full py-4 rounded-2xl font-black uppercase text-sm mb-4 transition active:scale-95 shadow-lg"></button>
-            
+            <button id="p-follow-btn" class="w-full py-4 rounded-2xl font-black uppercase text-sm mb-4 bg-blue-600 text-white"></button>
             <div id="admin-quick-edit" class="hidden border-t border-zinc-800 pt-6 space-y-3">
-                <p class="text-[10px] text-red-500 font-black uppercase tracking-widest">Administrative Control</p>
-                <div class="flex gap-2">
-                    <input id="edit-c" type="number" placeholder="Set Credits" class="flex-1 bg-black p-4 rounded-xl border border-zinc-800 text-sm outline-none focus:border-red-900">
-                    <select id="edit-v" class="bg-black p-4 rounded-xl border border-zinc-800 text-sm">
-                        <option value="false">Unverified</option>
-                        <option value="true">Verified</option>
-                    </select>
-                </div>
-                <button onclick="saveAdminQuick()" class="w-full bg-white text-black py-4 rounded-xl font-black uppercase text-xs">Confirm Changes</button>
+                <input id="edit-c" type="number" class="w-full bg-black p-4 rounded-xl border border-zinc-800 text-sm">
+                <button onclick="saveAdminQuick()" class="w-full bg-white text-black py-3 rounded-xl font-black text-xs">UPDATE CREDITS</button>
             </div>
         </div>
     </div>
 
     <div id="app-shell" class="flex h-screen">
         <aside class="sidebar">
-            <div class="p-6 text-2xl font-black italic tracking-tighter text-white">TRUST</div>
+            <div class="p-6 text-2xl font-black italic text-white tracking-tighter">TRUST</div>
             <nav class="flex-1 space-y-1 px-2">
                 <button onclick="showTab('home')" id="btn-home" class="tab-btn active">🎮 Vault</button>
-                <button onclick="showTab('friends')" id="btn-friends" class="tab-btn">👥 Friends</button>
-                <button onclick="showTab('messages')" id="btn-messages" class="tab-btn">📩 Inbox</button>
-                <div id="admin-nav" class="hidden"><button onclick="showTab('admin')" id="btn-admin" class="tab-btn text-yellow-500">🛠 Admin Panel</button></div>
+                <button onclick="showTab('friends')" id="btn-friends" class="tab-btn">👥 Circle</button>
+                <button id="btn-messages" class="tab-btn opacity-50">📩 Inbox</button>
+                <div id="admin-nav" class="hidden"><button onclick="showTab('admin')" id="btn-admin" class="tab-btn text-yellow-500">🛠 Admin</button></div>
             </nav>
             <div class="p-4 border-t border-zinc-800 bg-zinc-950">
                 <p id="my-name" class="font-black text-sm text-white truncate"></p>
-                <p id="my-credits" class="text-yellow-500 text-xs font-bold font-mono">0 Credits</p>
+                <p id="my-credits" class="text-yellow-500 text-xs font-bold font-mono"></p>
                 <button onclick="signOut(auth)" class="mt-2 text-[10px] uppercase text-zinc-600 font-bold">Sign Out</button>
             </div>
         </aside>
@@ -87,7 +84,7 @@
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
         import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
-        import { getFirestore, doc, getDoc, setDoc, onSnapshot, collection, addDoc, query, where, getDocs, updateDoc, serverTimestamp, orderBy, limit, arrayUnion, arrayRemove } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+        import { getFirestore, doc, getDoc, onSnapshot, collection, addDoc, query, where, getDocs, updateDoc, limit, arrayUnion, arrayRemove } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
         const firebaseConfig = { apiKey: "AIzaSyDV1Iq9F7N152JjXN7goayLLBiES8B4HkU", authDomain: "trust-games-1.firebaseapp.com", projectId: "trust-games-1", storageBucket: "trust-games-1.firebasestorage.app", messagingSenderId: "923318206410", appId: "1:923318206410:web:646cfe42238f9136cb5933" };
         const app = initializeApp(firebaseConfig);
@@ -117,33 +114,56 @@
             document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
             if(document.getElementById('btn-'+t)) document.getElementById('btn-'+t).classList.add('active');
             const main = document.getElementById('main-content');
-            main.innerHTML = `<div class="text-zinc-700 font-bold uppercase text-[10px]">Syncing Data...</div>`;
+            main.innerHTML = `<div class="text-zinc-700 font-bold uppercase text-[10px]">Updating...</div>`;
 
             if(t === 'home') {
-                main.innerHTML = `<div id="search-zone" class="mb-10 hidden"></div><div id="game-grid" class="grid grid-cols-1 lg:grid-cols-2 gap-6"></div>`;
+                main.innerHTML = `<div id="search-zone" class="mb-10 hidden"></div><div id="game-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"></div>`;
                 const snap = await getDocs(collection(db, "games"));
                 const gGrid = document.getElementById('game-grid');
                 gGrid.innerHTML = "";
                 snap.forEach(d => {
                     const g = d.data();
-                    gGrid.innerHTML += `<div class="bg-zinc-900 rounded-3xl border border-zinc-800 overflow-hidden"><iframe src="${g.url}" class="w-full aspect-video border-0"></iframe><div class="p-4 font-bold text-white">${g.name}</div></div>`;
+                    const card = document.createElement('div');
+                    card.className = "game-card";
+                    card.innerHTML = `
+                        <div class="h-48 bg-zinc-800 flex items-center justify-center text-4xl">🎮</div>
+                        <div class="p-5 flex justify-between items-center">
+                            <span class="font-black uppercase italic tracking-tighter text-white">${g.name}</span>
+                            <span class="text-[10px] font-bold bg-blue-600/20 text-blue-500 px-3 py-1 rounded-full uppercase">Play Now</span>
+                        </div>`;
+                    card.onclick = () => openGame(g.url);
+                    gGrid.appendChild(card);
                 });
             }
             if(t === 'friends') {
-                main.innerHTML = `<h2 class="text-xl font-black mb-6 italic uppercase tracking-tighter">My Circle</h2><div id="f-grid" class="grid grid-cols-2 md:grid-cols-4 gap-4"></div>`;
-                if(!myData.following || myData.following.length === 0) { document.getElementById('f-grid').innerHTML = `<p class="text-zinc-500 text-sm">No followers yet.</p>`; return; }
+                main.innerHTML = `<h2 class="text-xl font-black mb-6 italic uppercase">Friends</h2><div id="f-grid" class="grid grid-cols-2 md:grid-cols-4 gap-4"></div>`;
+                if(!myData.following || myData.following.length === 0) { document.getElementById('f-grid').innerHTML = `<p class="text-zinc-500 text-sm">No followers.</p>`; return; }
                 myData.following.forEach(f => {
-                    document.getElementById('f-grid').innerHTML += `<div onclick="openProfile('${f}')" class="bg-zinc-900 p-6 rounded-3xl border border-zinc-800 text-center cursor-pointer hover:border-blue-500 transition font-black italic uppercase tracking-tighter">${f}</div>`;
+                    document.getElementById('f-grid').innerHTML += `<div onclick="openProfile('${f}')" class="bg-zinc-900 p-6 rounded-3xl border border-zinc-800 text-center cursor-pointer font-black italic uppercase tracking-tighter">${f}</div>`;
                 });
             }
             if(t === 'admin') {
                 main.innerHTML = `<div class="bg-zinc-900 p-8 rounded-[2rem] border border-zinc-800 max-w-md">
-                    <p class="text-[10px] font-black text-blue-500 mb-6 uppercase tracking-widest">Vault Registry</p>
+                    <p class="text-[10px] font-black text-blue-500 mb-6 uppercase tracking-widest">Add Game</p>
                     <input id="add-gn" placeholder="Game Name" class="w-full bg-black p-4 rounded-2xl border border-zinc-800 mb-2 font-bold outline-none">
-                    <input id="add-gu" placeholder="Embed URL" class="w-full bg-black p-4 rounded-2xl border border-zinc-800 mb-6 font-bold outline-none">
-                    <button onclick="adminAddGame()" class="w-full bg-blue-600 py-4 rounded-2xl font-black uppercase text-sm">Add Game</button>
+                    <input id="add-gu" placeholder="Iframe URL" class="w-full bg-black p-4 rounded-2xl border border-zinc-800 mb-6 font-bold outline-none">
+                    <button onclick="adminAddGame()" class="w-full bg-blue-600 py-4 rounded-2xl font-black uppercase text-sm">Add to Vault</button>
                 </div>`;
             }
+        };
+
+        window.openGame = (url) => {
+            const overlay = document.getElementById('game-overlay');
+            const frame = document.getElementById('game-frame');
+            frame.src = url;
+            overlay.style.display = 'block';
+        };
+
+        window.closeGame = () => {
+            const overlay = document.getElementById('game-overlay');
+            const frame = document.getElementById('game-frame');
+            frame.src = "";
+            overlay.style.display = 'none';
         };
 
         window.doGlobalSearch = async () => {
@@ -162,45 +182,25 @@
         window.openProfile = async (n) => {
             const s = await getDoc(doc(db, "users", n));
             viewingUser = s.data();
-            
-            // Set basic info
             document.getElementById('p-name').innerText = viewingUser.username;
             document.getElementById('p-credits').innerText = (viewingUser.credits || 0).toLocaleString();
-            
-            // Set Verification Icon
-            const verIcon = document.getElementById('p-verified');
-            viewingUser.is_verified ? verIcon.classList.remove('hidden') : verIcon.classList.add('hidden');
-
-            // Set Role Badge
+            viewingUser.is_verified ? document.getElementById('p-verified').classList.remove('hidden') : document.getElementById('p-verified').classList.add('hidden');
             const bContainer = document.getElementById('p-badge-container');
-            bContainer.innerHTML = "";
-            if(viewingUser.role === 'owner') bContainer.innerHTML = `<span class="badge-owner">Owner</span>`;
-            else if(viewingUser.role === 'admin') bContainer.innerHTML = `<span class="badge-admin">Admin</span>`;
-            
-            // Set Follow Button
+            bContainer.innerHTML = viewingUser.role === 'owner' ? `<span class="badge-owner">Owner</span>` : '';
             const isF = myData.following?.includes(n);
             const btn = document.getElementById('p-follow-btn');
             btn.innerText = isF ? 'Unfollow' : 'Follow Player';
-            btn.className = `w-full py-4 rounded-2xl font-black uppercase text-sm mb-4 transition ${isF ? 'bg-zinc-800 text-zinc-500' : 'bg-blue-600 text-white shadow-[0_0_20px_rgba(59,130,246,0.3)]'}`;
+            btn.className = `w-full py-4 rounded-2xl font-black uppercase text-sm mb-4 transition ${isF ? 'bg-zinc-800 text-zinc-500' : 'bg-blue-600 text-white'}`;
             btn.onclick = () => toggleFollowAction(n, isF);
-
-            // Show Admin Panel if applicable
             if(myData.role === 'owner' || myData.role === 'admin') {
                 document.getElementById('admin-quick-edit').classList.remove('hidden');
                 document.getElementById('edit-c').value = viewingUser.credits;
-                document.getElementById('edit-v').value = viewingUser.is_verified ? "true" : "false";
             } else { document.getElementById('admin-quick-edit').classList.add('hidden'); }
-            
             document.getElementById('profile-modal').style.display = 'flex';
         };
 
         window.saveAdminQuick = async () => {
-            const newCreds = parseInt(document.getElementById('edit-c').value);
-            const newVer = document.getElementById('edit-v').value === "true";
-            await updateDoc(doc(db, "users", viewingUser.username), { 
-                credits: newCreds,
-                is_verified: newVer
-            });
+            await updateDoc(doc(db, "users", viewingUser.username), { credits: parseInt(document.getElementById('edit-c').value) });
             document.getElementById('profile-modal').style.display = 'none';
         };
 
