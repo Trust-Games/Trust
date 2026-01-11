@@ -3,73 +3,74 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Trust Games | Stable</title>
+    <title>Trust Games | Full Restoration</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         body { background-color: #050505; color: #e4e4e7; font-family: sans-serif; overflow: hidden; }
         #app-shell { display: none; height: 100vh; width: 100vw; }
         .sidebar { width: 250px; background: #09090b; border-right: 1px solid #18181b; display: flex; flex-direction: column; }
-        .tab-btn { width: 100%; padding: 15px; text-align: left; color: #a1a1aa; transition: 0.2s; }
+        .tab-btn { width: 100%; padding: 15px; text-align: left; color: #a1a1aa; transition: 0.2s; font-size: 14px; font-weight: 600; }
         .tab-btn:hover { background: #18181b; color: white; }
+        .tab-btn.active { color: #3b82f6; background: #111113; border-right: 2px solid #3b82f6; }
         .modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.9); z-index: 100; align-items: center; justify-content: center; padding: 20px; }
-        .badge-owner { color: #facc15; border: 1px solid #facc15; padding: 2px 5px; border-radius: 4px; font-size: 10px; font-weight: bold; }
+        .msg-bubble { padding: 10px 14px; border-radius: 15px; margin-bottom: 8px; max-width: 80%; font-size: 14px; }
+        .sent { background: #3b82f6; align-self: flex-end; color: white; }
+        .rcvd { background: #27272a; align-self: flex-start; color: white; }
+        .badge-owner { color: #facc15; border: 1px solid #facc15; padding: 1px 4px; border-radius: 4px; font-size: 9px; text-transform: uppercase; font-weight: 900; }
     </style>
 </head>
 <body>
 
-    <div id="loading-screen" class="fixed inset-0 bg-black z-[200] flex items-center justify-center font-bold">LOADING TRUST...</div>
+    <div id="loader" class="fixed inset-0 bg-black z-[200] flex items-center justify-center font-bold">BOOTING SYSTEM...</div>
 
     <div id="profile-modal" class="modal" onclick="this.style.display='none'">
         <div class="bg-zinc-900 p-8 rounded-3xl w-full max-w-sm border border-zinc-800" onclick="event.stopPropagation()">
-            <h2 id="p-name" class="text-2xl font-bold mb-2 italic">Username</h2>
-            <div id="p-badge" class="mb-6"></div>
-            <div class="bg-black p-4 rounded-xl mb-4">
-                <p class="text-xs text-zinc-500 uppercase">Credits</p>
-                <p id="p-credits" class="text-xl font-bold text-yellow-500">0</p>
+            <div class="flex justify-between items-start mb-4">
+                <h2 id="p-name" class="text-2xl font-bold italic">Username</h2>
+                <div id="p-badge"></div>
             </div>
-            <button id="p-follow-btn" class="w-full py-3 rounded-xl font-bold mb-4 bg-blue-600">Follow</button>
+            <div class="bg-black p-4 rounded-xl mb-4 border border-zinc-800">
+                <p class="text-[10px] text-zinc-500 uppercase font-bold">Balance</p>
+                <p id="p-credits" class="text-xl font-bold text-yellow-500">0 Credits</p>
+            </div>
+            <button id="p-follow-btn" class="w-full py-3 rounded-xl font-bold mb-4 bg-blue-600 transition active:scale-95">Follow</button>
             
-            <div id="admin-tools" class="hidden border-t border-zinc-800 pt-4 space-y-2">
-                <p class="text-xs text-red-500 font-bold">ADMIN PANEL</p>
-                <input id="edit-creds" type="number" placeholder="Set Credits" class="w-full bg-black p-3 rounded-lg border border-zinc-700">
-                <select id="edit-role" class="w-full bg-black p-3 rounded-lg border border-zinc-700">
-                    <option value="user">User</option>
-                    <option value="admin">Admin</option>
-                    <option value="owner">Owner</option>
-                </select>
-                <button onclick="saveAdminData()" class="w-full bg-white text-black py-2 rounded-lg font-bold">Save</button>
+            <div id="admin-quick-edit" class="hidden border-t border-zinc-800 pt-4 space-y-3">
+                <p class="text-[10px] text-red-500 font-bold uppercase">Quick Manage</p>
+                <input id="edit-c" type="number" placeholder="Set Credits" class="w-full bg-black p-3 rounded-lg border border-zinc-700 text-sm">
+                <button onclick="saveAdminQuick()" class="w-full bg-white text-black py-2 rounded-lg font-bold text-xs">Update Account</button>
             </div>
         </div>
     </div>
 
-    <div id="app-shell" class="flex">
+    <div id="app-shell" class="flex h-screen">
         <aside class="sidebar">
-            <div class="p-6 text-2xl font-black italic border-b border-zinc-900">TRUST</div>
-            <nav class="flex-1 mt-4">
-                <button onclick="showTab('home')" class="tab-btn">🎮 Vault</button>
-                <button onclick="showTab('friends')" class="tab-btn">👥 Friends</button>
-                <button onclick="showTab('messages')" class="tab-btn">📩 Inbox</button>
-                <div id="admin-nav" class="hidden"><button onclick="showTab('admin')" class="tab-btn text-yellow-500">🛠 Admin</button></div>
+            <div class="p-6 text-2xl font-black italic tracking-tighter text-white">TRUST</div>
+            <nav class="flex-1 space-y-1 px-2">
+                <button onclick="showTab('home')" id="btn-home" class="tab-btn active">🎮 Vault</button>
+                <button onclick="showTab('friends')" id="btn-friends" class="tab-btn">👥 Friends</button>
+                <button onclick="showTab('messages')" id="btn-messages" class="tab-btn">📩 Inbox</button>
+                <div id="admin-nav" class="hidden"><button onclick="showTab('admin')" id="btn-admin" class="tab-btn text-yellow-500">🛠 Admin Panel</button></div>
             </nav>
-            <div class="p-4 border-t border-zinc-800">
-                <p id="my-name" class="font-bold text-sm"></p>
-                <p id="my-credits" class="text-yellow-500 text-xs font-bold"></p>
-                <button onclick="logout()" class="mt-2 text-[10px] uppercase text-zinc-600 hover:text-red-500">Sign Out</button>
+            <div class="p-4 border-t border-zinc-800 bg-zinc-950">
+                <p id="my-name" class="font-bold text-sm text-white truncate"></p>
+                <p id="my-credits" class="text-yellow-500 text-xs font-bold font-mono">0 Credits</p>
+                <button onclick="signOut(auth)" class="mt-2 text-[10px] uppercase text-zinc-600 font-bold">Sign Out</button>
             </div>
         </aside>
 
-        <main class="flex-1 flex flex-col">
-            <header class="p-6 border-b border-zinc-900">
-                <input id="search-box" oninput="runSearch()" type="text" placeholder="Search players/games..." class="w-full max-w-md bg-zinc-900 p-3 rounded-xl border border-zinc-800 outline-none">
+        <main class="flex-1 flex flex-col bg-[#070708]">
+            <header class="p-4 border-b border-zinc-900 bg-[#050505]">
+                <input id="search-bar" oninput="doGlobalSearch()" type="text" placeholder="Search players or games..." class="w-full max-w-md bg-zinc-900/50 p-3 rounded-xl border border-zinc-800 outline-none text-sm focus:border-blue-600">
             </header>
-            <div id="main-content" class="flex-1 p-8 overflow-y-auto"></div>
+            <div id="main-content" class="flex-1 p-6 overflow-y-auto"></div>
         </main>
     </div>
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
         import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
-        import { getFirestore, doc, getDoc, setDoc, onSnapshot, collection, getDocs, updateDoc, arrayUnion, arrayRemove, query, where, limit } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+        import { getFirestore, doc, getDoc, setDoc, onSnapshot, collection, addDoc, query, where, getDocs, updateDoc, serverTimestamp, orderBy, limit, arrayUnion, arrayRemove } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
         const firebaseConfig = { apiKey: "AIzaSyDV1Iq9F7N152JjXN7goayLLBiES8B4HkU", authDomain: "trust-games-1.firebaseapp.com", projectId: "trust-games-1", storageBucket: "trust-games-1.firebasestorage.app", messagingSenderId: "923318206410", appId: "1:923318206410:web:646cfe42238f9136cb5933" };
         const app = initializeApp(firebaseConfig);
@@ -77,117 +78,173 @@
         const db = getFirestore(app);
 
         let myData = null;
-        let selectedUser = null;
+        let activeChat = null;
+        let viewingUser = null;
 
         onAuthStateChanged(auth, async (user) => {
             if (user) {
-                const username = user.email.split('@')[0];
-                onSnapshot(doc(db, "users", username), (snap) => {
+                const uName = user.email.split('@')[0];
+                onSnapshot(doc(db, "users", uName), (snap) => {
                     if(!snap.exists()) return;
                     myData = snap.data();
                     document.getElementById('my-name').innerText = myData.username;
-                    document.getElementById('my-credits').innerText = `${myData.credits} Credits`;
-                    if(myData.role === 'owner' || myData.role === 'admin') document.getElementById('admin-nav').style.display = 'block';
+                    document.getElementById('my-credits').innerText = `${myData.credits.toLocaleString()} Credits`;
+                    if(myData.role === 'owner' || myData.role === 'admin') document.getElementById('admin-nav').classList.remove('hidden');
                     document.getElementById('app-shell').style.display = 'flex';
-                    document.getElementById('loading-screen').style.display = 'none';
+                    document.getElementById('loader').style.display = 'none';
                     if(!document.getElementById('main-content').innerHTML) showTab('home');
                 });
             } else { location.reload(); }
         });
 
-        window.showTab = async (tab) => {
-            const container = document.getElementById('main-content');
-            container.innerHTML = "Loading...";
-            
-            try {
-                if (tab === 'home') {
-                    container.innerHTML = `<div id="search-area" class="mb-10 hidden"></div><div id="game-grid" class="grid grid-cols-1 md:grid-cols-2 gap-6"></div>`;
-                    const snap = await getDocs(collection(db, "games"));
-                    const grid = document.getElementById('game-grid');
-                    grid.innerHTML = "";
-                    snap.forEach(d => {
-                        const g = d.data();
-                        grid.innerHTML += `<div class="bg-zinc-900 rounded-3xl border border-zinc-800 overflow-hidden"><iframe src="${g.url}" class="w-full aspect-video border-0"></iframe><p class="p-4 font-bold">${g.name}</p></div>`;
-                    });
-                }
-                if (tab === 'friends') {
-                    container.innerHTML = `<h2 class="text-xl font-bold mb-4">Following</h2><div id="friend-list" class="grid grid-cols-1 md:grid-cols-3 gap-4"></div>`;
-                    if(!myData.following) return;
-                    myData.following.forEach(f => {
-                        document.getElementById('friend-list').innerHTML += `<div onclick="openProfile('${f}')" class="bg-zinc-900 p-4 rounded-xl border border-zinc-800 cursor-pointer">${f}</div>`;
-                    });
-                }
-                if (tab === 'admin') {
-                    container.innerHTML = `<div class="bg-zinc-900 p-6 rounded-2xl max-w-sm">
-                        <p class="font-bold mb-4">ADD NEW GAME</p>
-                        <input id="new-gn" placeholder="Name" class="w-full bg-black p-3 mb-2 rounded border border-zinc-800">
-                        <input id="new-gu" placeholder="Iframe URL" class="w-full bg-black p-3 mb-4 rounded border border-zinc-800">
-                        <button onclick="addGame()" class="w-full bg-blue-600 py-3 rounded font-bold">Publish</button>
-                    </div>`;
-                }
-            } catch (e) { container.innerHTML = "Error loading tab: " + e.message; }
+        window.showTab = async (t) => {
+            document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+            document.getElementById('btn-'+t).classList.add('active');
+            const main = document.getElementById('main-content');
+            main.innerHTML = `<div class="animate-pulse text-zinc-600">Loading...</div>`;
+
+            if(t === 'home') {
+                main.innerHTML = `<div id="search-zone" class="mb-10 hidden"></div><div id="game-grid" class="grid grid-cols-1 lg:grid-cols-2 gap-6"></div>`;
+                const snap = await getDocs(collection(db, "games"));
+                const gGrid = document.getElementById('game-grid');
+                gGrid.innerHTML = "";
+                snap.forEach(d => {
+                    const g = d.data();
+                    gGrid.innerHTML += `<div class="bg-zinc-900 rounded-3xl border border-zinc-800 overflow-hidden"><iframe src="${g.url}" class="w-full aspect-video border-0"></iframe><div class="p-4 font-bold text-white">${g.name}</div></div>`;
+                });
+            }
+
+            if(t === 'friends') {
+                main.innerHTML = `<h2 class="text-xl font-bold mb-6 italic">My Friends</h2><div id="f-grid" class="grid grid-cols-2 md:grid-cols-4 gap-4"></div>`;
+                if(!myData.following || myData.following.length === 0) { document.getElementById('f-grid').innerHTML = `<p class="text-zinc-500 text-sm">Follow players from search to see them here.</p>`; return; }
+                myData.following.forEach(f => {
+                    document.getElementById('f-grid').innerHTML += `<div onclick="openProfile('${f}')" class="bg-zinc-900 p-4 rounded-2xl border border-zinc-800 text-center cursor-pointer hover:border-blue-500 transition font-bold">${f}</div>`;
+                });
+            }
+
+            if(t === 'messages') {
+                main.innerHTML = `<div class="flex h-[75vh] bg-zinc-900/50 rounded-3xl border border-zinc-800 overflow-hidden">
+                    <div id="chat-sidebar" class="w-1/3 border-r border-zinc-800 overflow-y-auto"></div>
+                    <div class="flex-1 flex flex-col">
+                        <div id="msg-window" class="flex-1 p-6 overflow-y-auto flex flex-col"></div>
+                        <div class="p-4 flex gap-2"><input id="msg-in" placeholder="Type a message..." class="flex-1 bg-black p-4 rounded-xl outline-none border border-zinc-800"><button onclick="sendDirectMsg()" class="bg-blue-600 px-6 rounded-xl font-bold">Send</button></div>
+                    </div>
+                </div>`;
+                loadChatList();
+            }
+
+            if(t === 'admin') {
+                main.innerHTML = `<div class="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-4xl">
+                    <div class="bg-zinc-900 p-6 rounded-3xl border border-zinc-800">
+                        <p class="text-xs font-bold text-blue-500 mb-4 uppercase">Publish New Game</p>
+                        <input id="add-gn" placeholder="Game Title" class="w-full bg-black p-4 rounded-xl border border-zinc-800 mb-2">
+                        <input id="add-gu" placeholder="Iframe URL" class="w-full bg-black p-4 rounded-xl border border-zinc-800 mb-4">
+                        <button onclick="adminAddGame()" class="w-full bg-blue-600 py-4 rounded-xl font-bold">Add to Vault</button>
+                    </div>
+                    <div class="bg-zinc-900 p-6 rounded-3xl border border-zinc-800">
+                        <p class="text-xs font-bold text-yellow-500 mb-4 uppercase">Global Broadcast</p>
+                        <textarea id="broad-txt" placeholder="Announcement message..." class="w-full bg-black p-4 rounded-xl border border-zinc-800 h-24 mb-4"></textarea>
+                        <button onclick="adminBroadcast()" class="w-full bg-yellow-600 text-black py-4 rounded-xl font-bold">Send to Everyone</button>
+                    </div>
+                </div>`;
+            }
         };
 
-        window.runSearch = async () => {
-            const val = document.getElementById('search-box').value.toLowerCase();
-            const area = document.getElementById('search-area');
-            if(!val) { area.style.display = 'none'; return; }
-            area.style.display = 'block';
-            area.innerHTML = `<p class="text-xs text-zinc-500 mb-2">PLAYERS</p><div id="search-grid" class="flex gap-2"></div>`;
-            
-            const q = query(collection(db, "users"), where("username", ">=", val), where("username", "<=", val + "\uf8ff"), limit(5));
+        window.doGlobalSearch = async () => {
+            const val = document.getElementById('search-bar').value.toLowerCase();
+            const zone = document.getElementById('search-zone');
+            if(!val) { zone.classList.add('hidden'); return; }
+            zone.classList.remove('hidden');
+            zone.innerHTML = `<p class="text-[10px] font-bold text-zinc-600 mb-2 uppercase">Players Found</p><div id="s-grid" class="flex flex-wrap gap-2"></div>`;
+            const q = query(collection(db, "users"), where("username", ">=", val), where("username", "<=", val + "\uf8ff"), limit(6));
             const snap = await getDocs(q);
             snap.forEach(d => {
-                document.getElementById('search-grid').innerHTML += `<div onclick="openProfile('${d.id}')" class="bg-zinc-800 px-4 py-2 rounded-lg cursor-pointer border border-zinc-700">${d.id}</div>`;
+                document.getElementById('s-grid').innerHTML += `<div onclick="openProfile('${d.id}')" class="bg-zinc-800 px-4 py-2 rounded-xl cursor-pointer border border-zinc-700 font-bold hover:bg-zinc-700">${d.id}</div>`;
             });
         };
 
-        window.openProfile = async (name) => {
-            const snap = await getDoc(doc(db, "users", name));
-            selectedUser = snap.data();
-            document.getElementById('p-name').innerText = selectedUser.username;
-            document.getElementById('p-credits').innerText = selectedUser.credits;
-            document.getElementById('p-badge').innerHTML = selectedUser.role === 'owner' ? '<span class="badge-owner">Owner</span>' : '';
+        window.openProfile = async (n) => {
+            const s = await getDoc(doc(db, "users", n));
+            viewingUser = s.data();
+            document.getElementById('p-name').innerText = viewingUser.username;
+            document.getElementById('p-credits').innerText = `${viewingUser.credits.toLocaleString()} Credits`;
+            document.getElementById('p-badge').innerHTML = viewingUser.role === 'owner' ? `<span class="badge-owner">Owner</span>` : '';
             
-            const isF = myData.following?.includes(name);
+            const isF = myData.following?.includes(n);
             const btn = document.getElementById('p-follow-btn');
             btn.innerText = isF ? 'Unfollow' : 'Follow';
-            btn.onclick = () => toggleFollow(name, isF);
+            btn.className = `w-full py-3 rounded-xl font-bold ${isF ? 'bg-zinc-800 text-zinc-400' : 'bg-blue-600 text-white'}`;
+            btn.onclick = () => toggleFollowAction(n, isF);
 
             if(myData.role === 'owner' || myData.role === 'admin') {
-                document.getElementById('admin-tools').style.display = 'block';
-                document.getElementById('edit-creds').value = selectedUser.credits;
-                document.getElementById('edit-role').value = selectedUser.role || 'user';
-            } else { document.getElementById('admin-tools').style.display = 'none'; }
+                document.getElementById('admin-quick-edit').classList.remove('hidden');
+                document.getElementById('edit-c').value = viewingUser.credits;
+            } else { document.getElementById('admin-quick-edit').classList.add('hidden'); }
             
             document.getElementById('profile-modal').style.display = 'flex';
         };
 
-        window.saveAdminData = async () => {
-            await updateDoc(doc(db, "users", selectedUser.username), {
-                credits: parseInt(document.getElementById('edit-creds').value),
-                role: document.getElementById('edit-role').value
-            });
-            alert("Updated!");
+        window.saveAdminQuick = async () => {
+            await updateDoc(doc(db, "users", viewingUser.username), { credits: parseInt(document.getElementById('edit-c').value) });
             document.getElementById('profile-modal').style.display = 'none';
         };
 
-        window.toggleFollow = async (name, isF) => {
-            await updateDoc(doc(db, "users", myData.username), {
-                following: isF ? arrayRemove(name) : arrayUnion(name)
-            });
-            openProfile(name);
+        window.toggleFollowAction = async (n, isF) => {
+            await updateDoc(doc(db, "users", myData.username), { following: isF ? arrayRemove(n) : arrayUnion(n) });
+            openProfile(n);
         };
 
-        window.addGame = async () => {
-            await setDoc(doc(collection(db, "games")), {
-                name: document.getElementById('new-gn').value,
-                url: document.getElementById('new-gu').value
+        // CHAT ENGINE
+        window.loadChatList = () => {
+            const q = query(collection(db, "chats"), where("users", "array-contains", myData.username));
+            onSnapshot(q, s => {
+                const side = document.getElementById('chat-sidebar');
+                if(!side) return;
+                side.innerHTML = "";
+                s.forEach(d => {
+                    const other = d.data().users.find(u => u !== myData.username);
+                    side.innerHTML += `<div onclick="startChatStream('${d.id}')" class="p-5 border-b border-zinc-800 cursor-pointer hover:bg-zinc-800 font-bold">${other}</div>`;
+                });
             });
+        };
+
+        window.startChatStream = (id) => {
+            activeChat = id;
+            onSnapshot(query(collection(db, "chats", id, "messages"), orderBy("time", "asc")), s => {
+                const win = document.getElementById('msg-window');
+                if(!win) return;
+                win.innerHTML = "";
+                s.forEach(d => {
+                    const m = d.data();
+                    win.innerHTML += `<div class="msg-bubble ${m.sender === myData.username ? 'sent' : 'rcvd'}">${m.text}</div>`;
+                });
+                win.scrollTop = win.scrollHeight;
+            });
+        };
+
+        window.sendDirectMsg = async () => {
+            const val = document.getElementById('msg-in').value.trim();
+            if(!val || !activeChat) return;
+            await addDoc(collection(db, "chats", activeChat, "messages"), { text: val, sender: myData.username, time: serverTimestamp() });
+            document.getElementById('msg-in').value = "";
+        };
+
+        window.adminAddGame = async () => {
+            const n = document.getElementById('add-gn').value;
+            const u = document.getElementById('add-gu').value;
+            if(!n || !u) return;
+            await addDoc(collection(db, "games"), { name: n, url: u });
             showTab('home');
         };
 
-        window.logout = () => signOut(auth);
+        window.adminBroadcast = async () => {
+            const txt = document.getElementById('broad-txt').value;
+            if(!txt) return;
+            await addDoc(collection(db, "broadcasts"), { message: txt, time: serverTimestamp() });
+            document.getElementById('broad-txt').value = "";
+        };
+
+        window.signOut = signOut;
     </script>
 </body>
 </html>
