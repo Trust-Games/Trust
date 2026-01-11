@@ -3,181 +3,191 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Trust Games | Elite Edition</title>
+    <title>Trust Games | Stable</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
-        body { background-color: #050505; color: #e4e4e7; font-family: 'Inter', sans-serif; overflow: hidden; }
-        #app-shell { display: none; height: 100vh; width: 100vw; overflow: hidden; }
-        #sidebar { width: 260px; background: #09090b; border-right: 1px solid #18181b; display: flex; flex-direction: column; flex-shrink: 0; }
-        
-        /* Banner Styles */
-        #announcement-banner {
-            position: fixed; top: -120px; left: 50%; transform: translateX(-50%); width: 90%; max-width: 500px;
-            background: linear-gradient(135deg, #facc15 0%, #ca8a04 100%); color: #000; padding: 16px 24px;
-            border-radius: 24px; z-index: 2000; transition: 0.6s cubic-bezier(0.23, 1, 0.32, 1);
-            box-shadow: 0 20px 40px rgba(0,0,0,0.5), 0 0 30px rgba(250, 204, 21, 0.2);
-        }
-        #announcement-banner.show { top: 20px; }
-
-        /* Badges */
-        .badge-owner { color: #facc15; border: 1px solid #facc15; padding: 1px 5px; border-radius: 4px; font-size: 8px; text-transform: uppercase; background: rgba(250, 204, 21, 0.1); font-weight: 900; }
-        
-        .custom-scroll::-webkit-scrollbar { width: 4px; }
-        .custom-scroll::-webkit-scrollbar-thumb { background: #333; border-radius: 10px; }
-
-        .history-card { background: #0f0f11; border: 1px solid #1c1c21; transition: 0.2s; }
-        .history-card:hover { border-color: #facc15; }
+        body { background-color: #050505; color: #e4e4e7; font-family: sans-serif; overflow: hidden; }
+        #app-shell { display: none; height: 100vh; width: 100vw; }
+        .sidebar { width: 250px; background: #09090b; border-right: 1px solid #18181b; display: flex; flex-direction: column; }
+        .tab-btn { width: 100%; padding: 15px; text-align: left; color: #a1a1aa; transition: 0.2s; }
+        .tab-btn:hover { background: #18181b; color: white; }
+        .modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.9); z-index: 100; align-items: center; justify-content: center; padding: 20px; }
+        .badge-owner { color: #facc15; border: 1px solid #facc15; padding: 2px 5px; border-radius: 4px; font-size: 10px; font-weight: bold; }
     </style>
 </head>
 <body>
 
-    <div id="announcement-banner">
-        <div class="flex items-center gap-4">
-            <span class="text-2xl">📢</span>
-            <div class="flex-1">
-                <p class="text-[10px] font-black uppercase tracking-widest opacity-60">Global Alert</p>
-                <p id="ann-text" class="font-bold text-sm leading-snug"></p>
+    <div id="loading-screen" class="fixed inset-0 bg-black z-[200] flex items-center justify-center font-bold">LOADING TRUST...</div>
+
+    <div id="profile-modal" class="modal" onclick="this.style.display='none'">
+        <div class="bg-zinc-900 p-8 rounded-3xl w-full max-w-sm border border-zinc-800" onclick="event.stopPropagation()">
+            <h2 id="p-name" class="text-2xl font-bold mb-2 italic">Username</h2>
+            <div id="p-badge" class="mb-6"></div>
+            <div class="bg-black p-4 rounded-xl mb-4">
+                <p class="text-xs text-zinc-500 uppercase">Credits</p>
+                <p id="p-credits" class="text-xl font-bold text-yellow-500">0</p>
             </div>
-            <button onclick="closeAnn()" class="text-black/40 hover:text-black">✕</button>
+            <button id="p-follow-btn" class="w-full py-3 rounded-xl font-bold mb-4 bg-blue-600">Follow</button>
+            
+            <div id="admin-tools" class="hidden border-t border-zinc-800 pt-4 space-y-2">
+                <p class="text-xs text-red-500 font-bold">ADMIN PANEL</p>
+                <input id="edit-creds" type="number" placeholder="Set Credits" class="w-full bg-black p-3 rounded-lg border border-zinc-700">
+                <select id="edit-role" class="w-full bg-black p-3 rounded-lg border border-zinc-700">
+                    <option value="user">User</option>
+                    <option value="admin">Admin</option>
+                    <option value="owner">Owner</option>
+                </select>
+                <button onclick="saveAdminData()" class="w-full bg-white text-black py-2 rounded-lg font-bold">Save</button>
+            </div>
         </div>
     </div>
 
-    <div id="loader" class="fixed inset-0 bg-black z-[3000] flex items-center justify-center">
-        <div class="animate-spin rounded-full h-8 w-8 border-t-2 border-blue-500"></div>
-    </div>
-
-    <div id="app-shell" class="flex h-screen w-screen overflow-hidden">
-        <aside id="sidebar">
-            <div class="p-6 text-xl font-bold italic text-white tracking-tighter">TRUST</div>
-            <nav class="flex-1 px-4 space-y-1 overflow-y-auto custom-scroll">
-                <button onclick="showTab('home')" class="w-full p-4 flex items-center text-zinc-400 font-semibold hover:bg-zinc-900 rounded-xl transition">
-                    <span>🎮</span><span class="ml-4">Vault</span>
-                </button>
-                <button onclick="showTab('news')" class="w-full p-4 flex items-center text-zinc-400 font-semibold hover:bg-zinc-900 rounded-xl transition">
-                    <span>📰</span><span class="ml-4">News</span>
-                </button>
-                <button onclick="showTab('friends')" class="w-full p-4 flex items-center text-zinc-400 font-semibold hover:bg-zinc-900 rounded-xl transition">
-                    <span>👥</span><span class="ml-4">Friends</span>
-                </button>
-                <button onclick="showTab('messages')" class="w-full p-4 flex items-center text-zinc-400 font-semibold hover:bg-zinc-900 rounded-xl transition">
-                    <span>📩</span><span class="ml-4">Inbox</span>
-                </button>
-                <div id="admin-nav" class="hidden border-t border-zinc-800 mt-4 pt-4">
-                    <button onclick="showTab('admin')" class="w-full p-4 flex items-center text-yellow-500 font-bold hover:bg-zinc-900 rounded-xl transition">
-                        <span>🛠</span><span class="ml-4">Admin</span>
-                    </button>
-                </div>
+    <div id="app-shell" class="flex">
+        <aside class="sidebar">
+            <div class="p-6 text-2xl font-black italic border-b border-zinc-900">TRUST</div>
+            <nav class="flex-1 mt-4">
+                <button onclick="showTab('home')" class="tab-btn">🎮 Vault</button>
+                <button onclick="showTab('friends')" class="tab-btn">👥 Friends</button>
+                <button onclick="showTab('messages')" class="tab-btn">📩 Inbox</button>
+                <div id="admin-nav" class="hidden"><button onclick="showTab('admin')" class="tab-btn text-yellow-500">🛠 Admin</button></div>
             </nav>
-            <div class="p-4 flex-shrink-0 border-t border-zinc-800 bg-zinc-950/50">
-                <div class="bg-zinc-900 p-4 rounded-2xl border border-zinc-800 mb-2">
-                    <div class="flex items-center gap-2 mb-1">
-                        <p id="user-display" class="text-xs font-bold text-white truncate"></p>
-                        <div id="role-icon-slot"></div>
-                    </div>
-                    <p id="user-credits" class="text-sm text-yellow-500 font-mono font-bold">0 Credits</p>
-                </div>
-                <button onclick="logoutUser()" class="w-full text-[10px] text-zinc-600 hover:text-red-500 uppercase font-bold py-1">Sign Out</button>
+            <div class="p-4 border-t border-zinc-800">
+                <p id="my-name" class="font-bold text-sm"></p>
+                <p id="my-credits" class="text-yellow-500 text-xs font-bold"></p>
+                <button onclick="logout()" class="mt-2 text-[10px] uppercase text-zinc-600 hover:text-red-500">Sign Out</button>
             </div>
         </aside>
 
-        <main class="flex-1 flex flex-col bg-[#080808] min-w-0">
+        <main class="flex-1 flex flex-col">
             <header class="p-6 border-b border-zinc-900">
-                <div class="relative max-w-xl">
-                    <span class="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-500">🔍</span>
-                    <input id="global-search" oninput="handleGlobalSearch()" type="text" placeholder="Search games or players..." class="w-full bg-zinc-900/50 border border-zinc-800 p-3 pl-12 rounded-2xl text-sm outline-none focus:border-blue-500 transition">
-                </div>
+                <input id="search-box" oninput="runSearch()" type="text" placeholder="Search players/games..." class="w-full max-w-md bg-zinc-900 p-3 rounded-xl border border-zinc-800 outline-none">
             </header>
-            <div id="content" class="flex-1 overflow-y-auto p-6 md:p-10 custom-scroll"></div>
+            <div id="main-content" class="flex-1 p-8 overflow-y-auto"></div>
         </main>
     </div>
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
         import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
-        import { getFirestore, doc, getDoc, setDoc, onSnapshot, collection, addDoc, query, where, getDocs, updateDoc, serverTimestamp, orderBy, limit } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+        import { getFirestore, doc, getDoc, setDoc, onSnapshot, collection, getDocs, updateDoc, arrayUnion, arrayRemove, query, where, limit } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
         const firebaseConfig = { apiKey: "AIzaSyDV1Iq9F7N152JjXN7goayLLBiES8B4HkU", authDomain: "trust-games-1.firebaseapp.com", projectId: "trust-games-1", storageBucket: "trust-games-1.firebasestorage.app", messagingSenderId: "923318206410", appId: "1:923318206410:web:646cfe42238f9136cb5933" };
         const app = initializeApp(firebaseConfig);
         const auth = getAuth(app);
         const db = getFirestore(app);
 
-        let userProfile = null;
+        let myData = null;
+        let selectedUser = null;
 
         onAuthStateChanged(auth, async (user) => {
             if (user) {
-                const uName = user.email.split('@')[0];
-                onSnapshot(doc(db, "users", uName), (snap) => {
-                    userProfile = snap.data();
-                    document.getElementById('user-display').innerText = userProfile.username;
-                    document.getElementById('user-credits').innerText = `${(userProfile.credits || 0).toLocaleString()} Credits`;
-                    const slot = document.getElementById('role-icon-slot');
-                    slot.innerHTML = userProfile.role === 'owner' ? '<span class="badge-owner">Owner</span>' : '';
-                    if(userProfile.role === 'owner') document.getElementById('admin-nav').classList.remove('hidden');
+                const username = user.email.split('@')[0];
+                onSnapshot(doc(db, "users", username), (snap) => {
+                    if(!snap.exists()) return;
+                    myData = snap.data();
+                    document.getElementById('my-name').innerText = myData.username;
+                    document.getElementById('my-credits').innerText = `${myData.credits} Credits`;
+                    if(myData.role === 'owner' || myData.role === 'admin') document.getElementById('admin-nav').style.display = 'block';
                     document.getElementById('app-shell').style.display = 'flex';
-                    document.getElementById('loader').style.display = 'none';
-                    if(!document.getElementById('content').innerHTML) showTab('home');
-                });
-
-                // LIVE BROADCAST LISTENER
-                const qB = query(collection(db, "broadcasts"), orderBy("time", "desc"), limit(1));
-                onSnapshot(qB, (snap) => {
-                    snap.docChanges().forEach(change => {
-                        if(change.type === "added") {
-                            const data = change.doc.data();
-                            if(Date.now() - (data.time?.toMillis() || 0) < 10000) {
-                                document.getElementById('ann-text').innerText = data.message;
-                                document.getElementById('announcement-banner').classList.add('show');
-                                setTimeout(() => document.getElementById('announcement-banner').classList.remove('show'), 8000);
-                            }
-                        }
-                    });
+                    document.getElementById('loading-screen').style.display = 'none';
+                    if(!document.getElementById('main-content').innerHTML) showTab('home');
                 });
             } else { location.reload(); }
         });
 
-        window.showTab = async (t) => {
-            const main = document.getElementById('content');
-            main.innerHTML = "";
-
-            if (t === 'home') {
-                main.innerHTML = `<h3 class="text-[10px] font-bold text-zinc-600 uppercase mb-4 tracking-widest">Game Vault</h3><div id="game-list" class="grid grid-cols-1 lg:grid-cols-2 gap-8"></div>`;
-                const snap = await getDocs(collection(db, "games"));
-                snap.forEach(d => {
-                    const g = d.data();
-                    document.getElementById('game-list').innerHTML += `<div class="bg-zinc-900 rounded-[2rem] border border-zinc-800 overflow-hidden"><div style="position:relative;padding-top:56.25%"><iframe src="${g.url}" style="position:absolute;top:0;left:0;width:100%;height:100%;border:0"></iframe></div><div class="p-5 font-bold">${g.name}</div></div>`;
-                });
-            }
-
-            if (t === 'news') {
-                main.innerHTML = `<h2 class="text-2xl font-bold mb-8 italic">Archive</h2><div id="news-feed" class="space-y-4 max-w-2xl"></div>`;
-                const snap = await getDocs(query(collection(db, "broadcasts"), orderBy("time", "desc")));
-                snap.forEach(d => {
-                    const b = d.data();
-                    const date = b.time ? new Date(b.time.toMillis()).toLocaleDateString() : "Just now";
-                    document.getElementById('news-feed').innerHTML += `
-                        <div class="history-card p-6 rounded-2xl">
-                            <div class="flex justify-between items-start mb-2">
-                                <span class="badge-owner">Official</span>
-                                <span class="text-[10px] text-zinc-500">${date}</span>
-                            </div>
-                            <p class="text-white font-medium">${b.message}</p>
-                        </div>`;
-                });
-            }
-            // (Remaining tab logic for friends/messages/admin remains the same)
+        window.showTab = async (tab) => {
+            const container = document.getElementById('main-content');
+            container.innerHTML = "Loading...";
+            
+            try {
+                if (tab === 'home') {
+                    container.innerHTML = `<div id="search-area" class="mb-10 hidden"></div><div id="game-grid" class="grid grid-cols-1 md:grid-cols-2 gap-6"></div>`;
+                    const snap = await getDocs(collection(db, "games"));
+                    const grid = document.getElementById('game-grid');
+                    grid.innerHTML = "";
+                    snap.forEach(d => {
+                        const g = d.data();
+                        grid.innerHTML += `<div class="bg-zinc-900 rounded-3xl border border-zinc-800 overflow-hidden"><iframe src="${g.url}" class="w-full aspect-video border-0"></iframe><p class="p-4 font-bold">${g.name}</p></div>`;
+                    });
+                }
+                if (tab === 'friends') {
+                    container.innerHTML = `<h2 class="text-xl font-bold mb-4">Following</h2><div id="friend-list" class="grid grid-cols-1 md:grid-cols-3 gap-4"></div>`;
+                    if(!myData.following) return;
+                    myData.following.forEach(f => {
+                        document.getElementById('friend-list').innerHTML += `<div onclick="openProfile('${f}')" class="bg-zinc-900 p-4 rounded-xl border border-zinc-800 cursor-pointer">${f}</div>`;
+                    });
+                }
+                if (tab === 'admin') {
+                    container.innerHTML = `<div class="bg-zinc-900 p-6 rounded-2xl max-w-sm">
+                        <p class="font-bold mb-4">ADD NEW GAME</p>
+                        <input id="new-gn" placeholder="Name" class="w-full bg-black p-3 mb-2 rounded border border-zinc-800">
+                        <input id="new-gu" placeholder="Iframe URL" class="w-full bg-black p-3 mb-4 rounded border border-zinc-800">
+                        <button onclick="addGame()" class="w-full bg-blue-600 py-3 rounded font-bold">Publish</button>
+                    </div>`;
+                }
+            } catch (e) { container.innerHTML = "Error loading tab: " + e.message; }
         };
 
-        window.closeAnn = () => document.getElementById('announcement-banner').classList.remove('show');
-        window.logoutUser = () => signOut(auth);
-
-        // ADMIN DISPATCH
-        window.sendAnnounce = async () => {
-            const m = document.getElementById('ann-msg').value.trim();
-            if(!m) return;
-            await addDoc(collection(db, "broadcasts"), { message: m, time: serverTimestamp() });
-            document.getElementById('ann-msg').value = "";
+        window.runSearch = async () => {
+            const val = document.getElementById('search-box').value.toLowerCase();
+            const area = document.getElementById('search-area');
+            if(!val) { area.style.display = 'none'; return; }
+            area.style.display = 'block';
+            area.innerHTML = `<p class="text-xs text-zinc-500 mb-2">PLAYERS</p><div id="search-grid" class="flex gap-2"></div>`;
+            
+            const q = query(collection(db, "users"), where("username", ">=", val), where("username", "<=", val + "\uf8ff"), limit(5));
+            const snap = await getDocs(q);
+            snap.forEach(d => {
+                document.getElementById('search-grid').innerHTML += `<div onclick="openProfile('${d.id}')" class="bg-zinc-800 px-4 py-2 rounded-lg cursor-pointer border border-zinc-700">${d.id}</div>`;
+            });
         };
 
+        window.openProfile = async (name) => {
+            const snap = await getDoc(doc(db, "users", name));
+            selectedUser = snap.data();
+            document.getElementById('p-name').innerText = selectedUser.username;
+            document.getElementById('p-credits').innerText = selectedUser.credits;
+            document.getElementById('p-badge').innerHTML = selectedUser.role === 'owner' ? '<span class="badge-owner">Owner</span>' : '';
+            
+            const isF = myData.following?.includes(name);
+            const btn = document.getElementById('p-follow-btn');
+            btn.innerText = isF ? 'Unfollow' : 'Follow';
+            btn.onclick = () => toggleFollow(name, isF);
+
+            if(myData.role === 'owner' || myData.role === 'admin') {
+                document.getElementById('admin-tools').style.display = 'block';
+                document.getElementById('edit-creds').value = selectedUser.credits;
+                document.getElementById('edit-role').value = selectedUser.role || 'user';
+            } else { document.getElementById('admin-tools').style.display = 'none'; }
+            
+            document.getElementById('profile-modal').style.display = 'flex';
+        };
+
+        window.saveAdminData = async () => {
+            await updateDoc(doc(db, "users", selectedUser.username), {
+                credits: parseInt(document.getElementById('edit-creds').value),
+                role: document.getElementById('edit-role').value
+            });
+            alert("Updated!");
+            document.getElementById('profile-modal').style.display = 'none';
+        };
+
+        window.toggleFollow = async (name, isF) => {
+            await updateDoc(doc(db, "users", myData.username), {
+                following: isF ? arrayRemove(name) : arrayUnion(name)
+            });
+            openProfile(name);
+        };
+
+        window.addGame = async () => {
+            await setDoc(doc(collection(db, "games")), {
+                name: document.getElementById('new-gn').value,
+                url: document.getElementById('new-gu').value
+            });
+            showTab('home');
+        };
+
+        window.logout = () => signOut(auth);
     </script>
 </body>
 </html>
