@@ -3,224 +3,198 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>Trust Games | Stable</title>
+    <title>Trust Games | Recovery</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
-        :root { --blue: #3b82f6; --bg: #050505; --card: #0c0c0e; --border: #1c1c21; }
-        body { background: var(--bg); color: #e4e4e7; font-family: sans-serif; overflow: hidden; height: 100dvh; }
-        
-        /* Containers */
-        #auth-screen { display: flex; height: 100dvh; align-items: center; justify-content: center; background: #000; z-index: 9999; position: relative; }
-        #app-shell { display: none; height: 100dvh; width: 100vw; flex-direction: column; }
-        @media (min-width: 1024px) { #app-shell { flex-direction: row; } }
-
-        /* Sidebar & Navigation */
-        .sidebar { 
-            width: 280px; background: #09090b; border-right: 1px solid var(--border); 
-            display: flex; flex-direction: column; height: 100%;
-            position: fixed; left: 0; top: 0; z-index: 5000;
-            transition: transform 0.3s ease; transform: translateX(-100%);
-        }
-        .sidebar.active { transform: translateX(0); box-shadow: 20px 0 60px #000; }
-        @media (min-width: 1024px) { .sidebar { transform: translateX(0); position: relative; } }
-
-        /* Smooth Content Area */
-        main { flex: 1; display: flex; flex-direction: column; height: 100%; overflow: hidden; }
-        #view { flex: 1; overflow-y: auto; padding: 1.25rem; -webkit-overflow-scrolling: touch; }
-
-        /* Elements */
-        .glass { background: var(--card); border: 1px solid var(--border); border-radius: 1.25rem; }
-        .btn-nav { width: 100%; padding: 1rem; text-align: left; font-size: 11px; font-weight: 800; text-transform: uppercase; color: #71717a; border-radius: 12px; transition: 0.2s; }
-        .btn-nav.active { background: #111113; color: #fff; border: 1px solid var(--border); }
-        
-        /* Chat Scaling Fix */
-        .chat-container { display: flex; flex-direction: column; height: 100%; gap: 10px; }
-        .chat-box { flex: 1; overflow-y: auto; padding: 1rem; display: flex; flex-direction: column; gap: 8px; background: #08080a; border-radius: 1.5rem; border: 1px solid var(--border); }
-        .bubble { padding: 10px 14px; border-radius: 1rem; max-width: 80%; font-size: 13px; font-weight: 500; }
-        .bubble.me { background: var(--blue); align-self: flex-end; }
-        .bubble.them { background: #1c1c21; align-self: flex-start; color: #a1a1aa; }
+        body { background: #000; color: #fff; font-family: sans-serif; height: 100dvh; overflow: hidden; }
+        .input-field { width: 100%; background: #111; border: 1px solid #222; padding: 1rem; border-radius: 1rem; font-size: 14px; outline: none; transition: 0.2s; }
+        .input-field:focus { border-color: #3b82f6; }
+        #app-shell { display: none; height: 100%; flex-direction: column; }
+        .view-area { flex: 1; overflow-y: auto; padding: 1.5rem; }
+        .nav-bar { display: flex; background: #09090b; border-top: 1px solid #1c1c21; padding: 10px; justify-content: space-around; }
+        .nav-item { font-size: 10px; font-weight: 800; text-transform: uppercase; color: #555; }
+        .nav-item.active { color: #3b82f6; }
     </style>
 </head>
 <body>
 
-    <div id="auth-screen">
-        <div class="w-full max-w-xs text-center">
-            <h1 class="text-3xl font-black italic mb-8">TRUST</h1>
-            <div id="auth-form" class="space-y-3">
-                <input id="auth-email" type="email" placeholder="Email" class="w-full bg-zinc-900 border border-zinc-800 p-4 rounded-2xl text-sm outline-none focus:border-blue-600">
-                <input id="auth-pass" type="password" placeholder="Password" class="w-full bg-zinc-900 border border-zinc-800 p-4 rounded-2xl text-sm outline-none focus:border-blue-600">
-                <button onclick="handleAuth('login')" class="w-full bg-blue-600 py-4 rounded-2xl font-black text-xs uppercase">Login</button>
-                <button onclick="handleAuth('reg')" class="w-full bg-zinc-800 py-4 rounded-2xl font-black text-xs uppercase">Create Account</button>
+    <div id="auth-screen" class="fixed inset-0 flex items-center justify-center p-6 z-[9999] bg-black">
+        <div class="w-full max-w-sm">
+            <h1 class="text-4xl font-black italic mb-8 text-center">TRUST</h1>
+            
+            <div id="login-fields" class="space-y-3">
+                <input id="email" type="email" placeholder="Email Address" class="input-field">
+                <input id="pass" type="password" placeholder="Password" class="input-field">
+                
+                <div class="flex gap-2 pt-2">
+                    <button onclick="authAction('login')" class="flex-1 bg-blue-600 py-4 rounded-2xl font-black text-xs uppercase">Login</button>
+                    <button onclick="authAction('reg')" class="flex-1 bg-zinc-800 py-4 rounded-2xl font-black text-xs uppercase">Sign Up</button>
+                </div>
             </div>
-            <p id="auth-error" class="text-red-500 text-[10px] mt-4 font-bold uppercase"></p>
+
+            <p id="auth-msg" class="text-center text-xs mt-6 text-zinc-500 font-bold uppercase"></p>
         </div>
     </div>
 
     <div id="app-shell">
-        <aside id="sidebar" class="sidebar">
-            <div class="p-8 text-2xl font-black italic">TRUST</div>
-            <nav class="flex-1 px-4 space-y-1">
-                <button onclick="nav('home')" id="n-home" class="btn-nav active">Vault</button>
-                <button onclick="nav('chat')" id="n-chat" class="btn-nav">Messages</button>
-                <button onclick="nav('admin')" id="n-admin" class="btn-nav text-yellow-500 hidden">Staff</button>
-            </nav>
-            <div class="p-6 border-t border-zinc-900">
-                <p id="display-name" class="font-bold text-sm truncate"></p>
-                <button onclick="logout()" class="text-[10px] text-zinc-600 uppercase mt-2 font-bold">Logout</button>
-            </div>
-        </aside>
+        <header class="h-16 flex items-center px-6 border-b border-zinc-900 justify-between">
+            <span class="font-black italic">TRUST</span>
+            <button onclick="signOutUser()" class="text-[10px] font-bold text-zinc-500 uppercase">Logout</button>
+        </header>
 
-        <main>
-            <header class="h-16 border-b border-zinc-900 flex items-center px-4 justify-between bg-black">
-                <button onclick="toggleSide()" class="lg:hidden p-2 text-xl">☰</button>
-                <input id="search-bar" oninput="doSearch()" placeholder="Search User ID..." class="bg-zinc-900 border border-zinc-800 p-2 rounded-xl text-xs w-48 outline-none">
-            </header>
-            <div id="view"></div>
-        </main>
+        <div id="view" class="view-area"></div>
+
+        <nav class="nav-bar">
+            <button onclick="nav('home')" class="nav-item active" id="n-home">Vault</button>
+            <button onclick="nav('chat')" class="nav-item" id="n-chat">Chat</button>
+            <button onclick="nav('admin')" class="nav-item hidden text-yellow-500" id="n-admin">Admin</button>
+        </nav>
     </div>
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
         import { getAuth, onAuthStateChanged, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
-        import { getFirestore, doc, getDoc, setDoc, updateDoc, onSnapshot, collection, query, where, orderBy, addDoc, serverTimestamp, limit, getDocs } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+        import { getFirestore, doc, getDoc, setDoc, onSnapshot, collection, query, where, orderBy, addDoc, serverTimestamp, getDocs, updateDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
         const firebaseConfig = { apiKey: "AIzaSyDV1Iq9F7N152JjXN7goayLLBiES8B4HkU", authDomain: "trust-games-1.firebaseapp.com", projectId: "trust-games-1", storageBucket: "trust-games-1.firebasestorage.app", messagingSenderId: "923318206410", appId: "1:923318206410:web:646cfe42238f9136cb5933" };
         const app = initializeApp(firebaseConfig);
         const auth = getAuth(app);
         const db = getFirestore(app);
 
-        let userMe = null, chatUnsub = null, activeCID = null;
+        let me = null;
 
-        // AUTH STATE OBSERVER
-        onAuthStateChanged(auth, u => {
-            if (u) {
-                const id = u.email.split('@')[0].toLowerCase();
-                onSnapshot(doc(db, "users", id), s => {
-                    if(!s.exists()) return;
-                    userMe = s.data();
-                    document.getElementById('display-name').innerText = userMe.username.toUpperCase();
-                    if(['owner','admin'].includes(userMe.role)) document.getElementById('n-admin').classList.remove('hidden');
-                    document.getElementById('app-shell').style.display = 'flex';
-                    document.getElementById('auth-screen').style.display = 'none';
-                    if(!document.getElementById('view').innerHTML) nav('home');
-                });
+        // 1. Simple Auth Listener
+        onAuthStateChanged(auth, async (user) => {
+            const authScreen = document.getElementById('auth-screen');
+            const appShell = document.getElementById('app-shell');
+
+            if (user) {
+                authScreen.style.display = 'none';
+                appShell.style.display = 'flex';
+                
+                const id = user.email.split('@')[0].toLowerCase();
+                const snap = await getDoc(doc(db, "users", id));
+                
+                if (snap.exists()) {
+                    me = snap.data();
+                    if (['admin', 'owner'].includes(me.role)) {
+                        document.getElementById('n-admin').classList.remove('hidden');
+                    }
+                    nav('home');
+                }
             } else {
-                document.getElementById('app-shell').style.display = 'none';
-                document.getElementById('auth-screen').style.display = 'flex';
+                authScreen.style.display = 'flex';
+                appShell.style.display = 'none';
             }
         });
 
-        // AUTH HANDLER
-        window.handleAuth = async (type) => {
-            const email = document.getElementById('auth-email').value;
-            const pass = document.getElementById('auth-pass').value;
-            const err = document.getElementById('auth-error');
+        // 2. Auth Actions
+        window.authAction = async (type) => {
+            const email = document.getElementById('email').value;
+            const pass = document.getElementById('pass').value;
+            const msg = document.getElementById('auth-msg');
+            msg.innerText = "Processing...";
+
             try {
-                if(type === 'login') await signInWithEmailAndPassword(auth, email, pass);
-                else {
+                if (type === 'login') {
+                    await signInWithEmailAndPassword(auth, email, pass);
+                } else {
                     const res = await createUserWithEmailAndPassword(auth, email, pass);
                     const id = email.split('@')[0].toLowerCase();
-                    await setDoc(doc(db, "users", id), { username: id, credits: 0, role: 'user', is_verified: false, following: [] });
-                }
-            } catch (e) { err.innerText = e.message; }
-        };
-
-        window.logout = () => signOut(auth);
-        window.toggleSide = () => document.getElementById('sidebar').classList.toggle('active');
-        window.nav = (t) => {
-            document.querySelectorAll('.btn-nav').forEach(b => b.classList.remove('active'));
-            document.getElementById('n-'+t).classList.add('active');
-            if(window.innerWidth < 1024) document.getElementById('sidebar').classList.remove('active');
-            renderView(t);
-        };
-
-        async function renderView(t) {
-            const view = document.getElementById('view');
-            view.innerHTML = `<div class="p-10 text-center text-xs opacity-50">SYNCING...</div>`;
-
-            if(t === 'home') {
-                view.innerHTML = `<div class="grid grid-cols-2 md:grid-cols-4 gap-3" id="g-list"></div>`;
-                const s = await getDocs(collection(db, "games"));
-                s.forEach(d => {
-                    view.querySelector('#g-list').innerHTML += `<div onclick="window.open('${d.data().url}')" class="glass aspect-square flex flex-col items-center justify-center p-4 hover:border-blue-600 transition cursor-pointer"><div class="text-3xl mb-1">🎮</div><div class="text-[9px] font-black uppercase">${d.data().name}</div></div>`;
-                });
-            }
-
-            if(t === 'chat') {
-                view.innerHTML = `
-                <div class="chat-container">
-                    <div id="chat-tabs" class="flex gap-2 overflow-x-auto pb-2"></div>
-                    <div id="chat-msgs" class="chat-box"></div>
-                    <div class="flex gap-2 p-2 bg-zinc-900 rounded-2xl">
-                        <input id="msg-input" class="flex-1 bg-transparent p-2 text-xs outline-none" placeholder="Message...">
-                        <button onclick="sendMsg()" class="bg-blue-600 px-6 py-2 rounded-xl font-black text-[10px]">SEND</button>
-                    </div>
-                </div>`;
-                onSnapshot(query(collection(db, "chats"), where("members", "array-contains", userMe.username.toLowerCase())), s => {
-                    const tabs = document.getElementById('chat-tabs'); if(!tabs) return; tabs.innerHTML = "";
-                    s.forEach(d => {
-                        const other = d.data().members.find(m => m !== userMe.username.toLowerCase());
-                        tabs.innerHTML += `<button onclick="switchChat('${d.id}')" class="bg-zinc-800 px-4 py-2 rounded-xl text-[10px] font-bold border border-zinc-700 whitespace-nowrap">${other}</button>`;
+                    await setDoc(doc(db, "users", id), {
+                        username: id, credits: 100, role: 'user', is_verified: false, following: []
                     });
+                }
+            } catch (e) {
+                msg.innerText = "Error: " + e.message;
+            }
+        };
+
+        window.signOutUser = () => signOut(auth);
+
+        // 3. Navigation & Views
+        window.nav = (t) => {
+            document.querySelectorAll('.nav-item').forEach(i => i.classList.remove('active'));
+            document.getElementById('n-'+t).classList.add('active');
+            render(t);
+        };
+
+        async function render(t) {
+            const view = document.getElementById('view');
+            view.innerHTML = `<p class="text-center mt-10 text-xs opacity-50">LOADING...</p>`;
+
+            if (t === 'home') {
+                const s = await getDocs(collection(db, "games"));
+                view.innerHTML = `<div class="grid grid-cols-2 gap-3"></div>`;
+                s.forEach(d => {
+                    view.firstChild.innerHTML += `
+                    <div onclick="window.open('${d.data().url}')" class="bg-zinc-900 aspect-square rounded-3xl border border-zinc-800 flex flex-col items-center justify-center p-4">
+                        <span class="text-2xl mb-2">🎮</span>
+                        <span class="text-[9px] font-black uppercase">${d.data().name}</span>
+                    </div>`;
                 });
             }
 
-            if(t === 'admin') {
+            if (t === 'chat') {
+                view.innerHTML = `<div class="space-y-2" id="chat-list"></div>`;
+                const s = await getDocs(query(collection(db, "chats"), where("members", "array-contains", me.username.toLowerCase())));
+                s.forEach(d => {
+                    const other = d.data().members.find(m => m !== me.username.toLowerCase());
+                    view.firstChild.innerHTML += `
+                    <div onclick="enterChat('${d.id}')" class="bg-zinc-900 p-5 rounded-2xl border border-zinc-800 flex justify-between items-center">
+                        <span class="text-xs font-bold uppercase">${other}</span>
+                        <span class="text-blue-500">→</span>
+                    </div>`;
+                });
+            }
+
+            if (t === 'admin') {
                 const s = await getDocs(collection(db, "users"));
-                view.innerHTML = `<h2 class="text-sm font-black mb-4 uppercase text-zinc-500">Staff Management</h2>`;
+                view.innerHTML = `<h2 class="text-sm font-black mb-4 uppercase">User List</h2>`;
                 s.forEach(d => {
                     const u = d.data();
-                    view.innerHTML += `<div class="glass p-4 flex justify-between items-center mb-2">
+                    view.innerHTML += `
+                    <div class="bg-zinc-900 p-4 rounded-xl mb-2 flex justify-between items-center">
                         <span class="text-xs font-bold uppercase">${u.username}</span>
-                        <button onclick="verifyUser('${d.id}', ${u.is_verified})" class="px-4 py-2 rounded-lg text-[10px] font-black ${u.is_verified ? 'bg-blue-600' : 'bg-zinc-800'}">${u.is_verified ? 'VERIFIED' : 'VERIFY'}</button>
+                        <button onclick="toggleV('${d.id}', ${u.is_verified})" class="px-4 py-2 rounded-lg text-[9px] font-black ${u.is_verified ? 'bg-blue-600' : 'bg-zinc-800'}">
+                            ${u.is_verified ? 'VERIFIED' : 'VERIFY'}
+                        </button>
                     </div>`;
                 });
             }
         }
 
-        window.switchChat = (id) => {
-            if(chatUnsub) chatUnsub();
-            activeCID = id;
-            chatUnsub = onSnapshot(query(collection(db, "chats", id, "messages"), orderBy("time", "asc"), limit(30)), s => {
-                const box = document.getElementById('chat-msgs'); if(!box) return;
+        window.toggleV = async (id, cur) => {
+            await updateDoc(doc(db, "users", id.toLowerCase()), { is_verified: !cur });
+            render('admin');
+        };
+
+        window.enterChat = (id) => {
+            const view = document.getElementById('view');
+            view.innerHTML = `<div id="msgs" class="flex-1 space-y-3 mb-20"></div>
+            <div class="fixed bottom-20 left-4 right-4 flex gap-2">
+                <input id="mi" class="flex-1 bg-zinc-900 p-4 rounded-2xl text-xs outline-none" placeholder="Message...">
+                <button onclick="send('${id}')" class="bg-blue-600 px-6 rounded-2xl font-black text-xs">SEND</button>
+            </div>`;
+            
+            onSnapshot(query(collection(db, "chats", id, "messages"), orderBy("time", "asc")), s => {
+                const box = document.getElementById('msgs'); if(!box) return;
                 box.innerHTML = "";
                 s.forEach(d => {
-                    const m = d.data(); const isMe = m.sender === userMe.username.toLowerCase();
-                    box.innerHTML += `<div class="bubble ${isMe ? 'me' : 'them'}">${m.text}</div>`;
+                    const m = d.data(); const isMe = m.sender === me.username.toLowerCase();
+                    box.innerHTML += `<div class="p-3 rounded-xl max-w-[80%] text-xs ${isMe ? 'bg-blue-600 ml-auto' : 'bg-zinc-800'}">${m.text}</div>`;
                 });
-                box.scrollTop = box.scrollHeight;
+                window.scrollTo(0, document.body.scrollHeight);
             });
         };
 
-        window.sendMsg = async () => {
-            const i = document.getElementById('msg-input');
-            if(!i.value || !activeCID) return;
-            await addDoc(collection(db, "chats", activeCID, "messages"), { text: i.value, sender: userMe.username.toLowerCase(), time: serverTimestamp() });
+        window.send = async (id) => {
+            const i = document.getElementById('mi');
+            if(!i.value) return;
+            await addDoc(collection(db, "chats", id, "messages"), { text: i.value, sender: me.username.toLowerCase(), time: serverTimestamp() });
             i.value = "";
         };
 
-        window.verifyUser = async (id, cur) => {
-            await updateDoc(doc(db, "users", id.toLowerCase()), { is_verified: !cur });
-            renderView('admin');
-        };
-
-        window.doSearch = async () => {
-            const v = document.getElementById('search-bar').value.toLowerCase();
-            if(!v) return;
-            const s = await getDocs(query(collection(db, "users"), where("username", ">=", v), where("username", "<=", v + "\uf8ff"), limit(3)));
-            const view = document.getElementById('view'); view.innerHTML = "";
-            s.forEach(d => {
-                view.innerHTML += `<div onclick="createConvo('${d.id}')" class="glass p-4 mb-2 cursor-pointer font-bold uppercase text-xs">Chat with ${d.data().username}</div>`;
-            });
-        };
-
-        window.createConvo = async (tid) => {
-            const pair = [userMe.username.toLowerCase(), tid.toLowerCase()].sort();
-            const cid = pair.join('_');
-            const ref = doc(db, "chats", cid);
-            if(!(await getDoc(ref)).exists()) await setDoc(ref, { members: pair });
-            nav('chat'); setTimeout(() => switchChat(cid), 300);
-        };
     </script>
 </body>
 </html>
