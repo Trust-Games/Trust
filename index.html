@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Trust Games | Full Restoration</title>
+    <title>Trust Games | Elite</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         body { background-color: #050505; color: #e4e4e7; font-family: sans-serif; overflow: hidden; }
@@ -13,10 +13,14 @@
         .tab-btn:hover { background: #18181b; color: white; }
         .tab-btn.active { color: #3b82f6; background: #111113; border-right: 2px solid #3b82f6; }
         .modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.9); z-index: 100; align-items: center; justify-content: center; padding: 20px; }
-        .msg-bubble { padding: 10px 14px; border-radius: 15px; margin-bottom: 8px; max-width: 80%; font-size: 14px; }
-        .sent { background: #3b82f6; align-self: flex-end; color: white; }
-        .rcvd { background: #27272a; align-self: flex-start; color: white; }
-        .badge-owner { color: #facc15; border: 1px solid #facc15; padding: 1px 4px; border-radius: 4px; font-size: 9px; text-transform: uppercase; font-weight: 900; }
+        
+        /* Badges & Icons */
+        .badge-owner { background: linear-gradient(to right, #facc15, #eab308); color: black; padding: 2px 8px; border-radius: 6px; font-size: 10px; font-weight: 900; text-transform: uppercase; margin-left: 8px; }
+        .badge-admin { background: #3b82f6; color: white; padding: 2px 8px; border-radius: 6px; font-size: 10px; font-weight: 900; text-transform: uppercase; margin-left: 8px; }
+        .verified-icon { color: #3b82f6; margin-left: 4px; font-size: 18px; }
+        
+        /* Credit Card Top */
+        .credit-header { background: linear-gradient(135deg, #1c1c1e 0%, #0a0a0a 100%); border: 1px solid #27272a; padding: 24px; border-radius: 24px; text-align: center; margin-bottom: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
     </style>
 </head>
 <body>
@@ -24,21 +28,34 @@
     <div id="loader" class="fixed inset-0 bg-black z-[200] flex items-center justify-center font-bold">BOOTING SYSTEM...</div>
 
     <div id="profile-modal" class="modal" onclick="this.style.display='none'">
-        <div class="bg-zinc-900 p-8 rounded-3xl w-full max-w-sm border border-zinc-800" onclick="event.stopPropagation()">
-            <div class="flex justify-between items-start mb-4">
-                <h2 id="p-name" class="text-2xl font-bold italic">Username</h2>
-                <div id="p-badge"></div>
-            </div>
-            <div class="bg-black p-4 rounded-xl mb-4 border border-zinc-800">
-                <p class="text-[10px] text-zinc-500 uppercase font-bold">Balance</p>
-                <p id="p-credits" class="text-xl font-bold text-yellow-500">0 Credits</p>
-            </div>
-            <button id="p-follow-btn" class="w-full py-3 rounded-xl font-bold mb-4 bg-blue-600 transition active:scale-95">Follow</button>
+        <div class="bg-[#0f0f11] p-6 rounded-[2.5rem] w-full max-w-sm border border-[#27272a]" onclick="event.stopPropagation()">
             
-            <div id="admin-quick-edit" class="hidden border-t border-zinc-800 pt-4 space-y-3">
-                <p class="text-[10px] text-red-500 font-bold uppercase">Quick Manage</p>
-                <input id="edit-c" type="number" placeholder="Set Credits" class="w-full bg-black p-3 rounded-lg border border-zinc-700 text-sm">
-                <button onclick="saveAdminQuick()" class="w-full bg-white text-black py-2 rounded-lg font-bold text-xs">Update Account</button>
+            <div class="credit-header">
+                <p class="text-[10px] text-zinc-500 uppercase font-black tracking-widest mb-1">Available Balance</p>
+                <p id="p-credits" class="text-4xl font-black text-yellow-500 tracking-tighter">0</p>
+                <p class="text-xs text-yellow-600/50 font-bold uppercase mt-1">Trust Credits</p>
+            </div>
+
+            <div class="px-2 mb-6 text-center">
+                <div class="flex items-center justify-center mb-1">
+                    <h2 id="p-name" class="text-2xl font-black italic tracking-tighter text-white uppercase">Username</h2>
+                    <span id="p-verified" class="verified-icon hidden">✔</span>
+                </div>
+                <div id="p-badge-container" class="flex justify-center mt-1"></div>
+            </div>
+
+            <button id="p-follow-btn" class="w-full py-4 rounded-2xl font-black uppercase text-sm mb-4 transition active:scale-95 shadow-lg"></button>
+            
+            <div id="admin-quick-edit" class="hidden border-t border-zinc-800 pt-6 space-y-3">
+                <p class="text-[10px] text-red-500 font-black uppercase tracking-widest">Administrative Control</p>
+                <div class="flex gap-2">
+                    <input id="edit-c" type="number" placeholder="Set Credits" class="flex-1 bg-black p-4 rounded-xl border border-zinc-800 text-sm outline-none focus:border-red-900">
+                    <select id="edit-v" class="bg-black p-4 rounded-xl border border-zinc-800 text-sm">
+                        <option value="false">Unverified</option>
+                        <option value="true">Verified</option>
+                    </select>
+                </div>
+                <button onclick="saveAdminQuick()" class="w-full bg-white text-black py-4 rounded-xl font-black uppercase text-xs">Confirm Changes</button>
             </div>
         </div>
     </div>
@@ -53,7 +70,7 @@
                 <div id="admin-nav" class="hidden"><button onclick="showTab('admin')" id="btn-admin" class="tab-btn text-yellow-500">🛠 Admin Panel</button></div>
             </nav>
             <div class="p-4 border-t border-zinc-800 bg-zinc-950">
-                <p id="my-name" class="font-bold text-sm text-white truncate"></p>
+                <p id="my-name" class="font-black text-sm text-white truncate"></p>
                 <p id="my-credits" class="text-yellow-500 text-xs font-bold font-mono">0 Credits</p>
                 <button onclick="signOut(auth)" class="mt-2 text-[10px] uppercase text-zinc-600 font-bold">Sign Out</button>
             </div>
@@ -61,7 +78,7 @@
 
         <main class="flex-1 flex flex-col bg-[#070708]">
             <header class="p-4 border-b border-zinc-900 bg-[#050505]">
-                <input id="search-bar" oninput="doGlobalSearch()" type="text" placeholder="Search players or games..." class="w-full max-w-md bg-zinc-900/50 p-3 rounded-xl border border-zinc-800 outline-none text-sm focus:border-blue-600">
+                <input id="search-bar" oninput="doGlobalSearch()" type="text" placeholder="Search players..." class="w-full max-w-md bg-zinc-900/50 p-4 rounded-2xl border border-zinc-800 outline-none text-sm font-bold">
             </header>
             <div id="main-content" class="flex-1 p-6 overflow-y-auto"></div>
         </main>
@@ -78,7 +95,6 @@
         const db = getFirestore(app);
 
         let myData = null;
-        let activeChat = null;
         let viewingUser = null;
 
         onAuthStateChanged(auth, async (user) => {
@@ -88,7 +104,7 @@
                     if(!snap.exists()) return;
                     myData = snap.data();
                     document.getElementById('my-name').innerText = myData.username;
-                    document.getElementById('my-credits').innerText = `${myData.credits.toLocaleString()} Credits`;
+                    document.getElementById('my-credits').innerText = `${(myData.credits || 0).toLocaleString()} Credits`;
                     if(myData.role === 'owner' || myData.role === 'admin') document.getElementById('admin-nav').classList.remove('hidden');
                     document.getElementById('app-shell').style.display = 'flex';
                     document.getElementById('loader').style.display = 'none';
@@ -99,9 +115,9 @@
 
         window.showTab = async (t) => {
             document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-            document.getElementById('btn-'+t).classList.add('active');
+            if(document.getElementById('btn-'+t)) document.getElementById('btn-'+t).classList.add('active');
             const main = document.getElementById('main-content');
-            main.innerHTML = `<div class="animate-pulse text-zinc-600">Loading...</div>`;
+            main.innerHTML = `<div class="text-zinc-700 font-bold uppercase text-[10px]">Syncing Data...</div>`;
 
             if(t === 'home') {
                 main.innerHTML = `<div id="search-zone" class="mb-10 hidden"></div><div id="game-grid" class="grid grid-cols-1 lg:grid-cols-2 gap-6"></div>`;
@@ -113,39 +129,19 @@
                     gGrid.innerHTML += `<div class="bg-zinc-900 rounded-3xl border border-zinc-800 overflow-hidden"><iframe src="${g.url}" class="w-full aspect-video border-0"></iframe><div class="p-4 font-bold text-white">${g.name}</div></div>`;
                 });
             }
-
             if(t === 'friends') {
-                main.innerHTML = `<h2 class="text-xl font-bold mb-6 italic">My Friends</h2><div id="f-grid" class="grid grid-cols-2 md:grid-cols-4 gap-4"></div>`;
-                if(!myData.following || myData.following.length === 0) { document.getElementById('f-grid').innerHTML = `<p class="text-zinc-500 text-sm">Follow players from search to see them here.</p>`; return; }
+                main.innerHTML = `<h2 class="text-xl font-black mb-6 italic uppercase tracking-tighter">My Circle</h2><div id="f-grid" class="grid grid-cols-2 md:grid-cols-4 gap-4"></div>`;
+                if(!myData.following || myData.following.length === 0) { document.getElementById('f-grid').innerHTML = `<p class="text-zinc-500 text-sm">No followers yet.</p>`; return; }
                 myData.following.forEach(f => {
-                    document.getElementById('f-grid').innerHTML += `<div onclick="openProfile('${f}')" class="bg-zinc-900 p-4 rounded-2xl border border-zinc-800 text-center cursor-pointer hover:border-blue-500 transition font-bold">${f}</div>`;
+                    document.getElementById('f-grid').innerHTML += `<div onclick="openProfile('${f}')" class="bg-zinc-900 p-6 rounded-3xl border border-zinc-800 text-center cursor-pointer hover:border-blue-500 transition font-black italic uppercase tracking-tighter">${f}</div>`;
                 });
             }
-
-            if(t === 'messages') {
-                main.innerHTML = `<div class="flex h-[75vh] bg-zinc-900/50 rounded-3xl border border-zinc-800 overflow-hidden">
-                    <div id="chat-sidebar" class="w-1/3 border-r border-zinc-800 overflow-y-auto"></div>
-                    <div class="flex-1 flex flex-col">
-                        <div id="msg-window" class="flex-1 p-6 overflow-y-auto flex flex-col"></div>
-                        <div class="p-4 flex gap-2"><input id="msg-in" placeholder="Type a message..." class="flex-1 bg-black p-4 rounded-xl outline-none border border-zinc-800"><button onclick="sendDirectMsg()" class="bg-blue-600 px-6 rounded-xl font-bold">Send</button></div>
-                    </div>
-                </div>`;
-                loadChatList();
-            }
-
             if(t === 'admin') {
-                main.innerHTML = `<div class="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-4xl">
-                    <div class="bg-zinc-900 p-6 rounded-3xl border border-zinc-800">
-                        <p class="text-xs font-bold text-blue-500 mb-4 uppercase">Publish New Game</p>
-                        <input id="add-gn" placeholder="Game Title" class="w-full bg-black p-4 rounded-xl border border-zinc-800 mb-2">
-                        <input id="add-gu" placeholder="Iframe URL" class="w-full bg-black p-4 rounded-xl border border-zinc-800 mb-4">
-                        <button onclick="adminAddGame()" class="w-full bg-blue-600 py-4 rounded-xl font-bold">Add to Vault</button>
-                    </div>
-                    <div class="bg-zinc-900 p-6 rounded-3xl border border-zinc-800">
-                        <p class="text-xs font-bold text-yellow-500 mb-4 uppercase">Global Broadcast</p>
-                        <textarea id="broad-txt" placeholder="Announcement message..." class="w-full bg-black p-4 rounded-xl border border-zinc-800 h-24 mb-4"></textarea>
-                        <button onclick="adminBroadcast()" class="w-full bg-yellow-600 text-black py-4 rounded-xl font-bold">Send to Everyone</button>
-                    </div>
+                main.innerHTML = `<div class="bg-zinc-900 p-8 rounded-[2rem] border border-zinc-800 max-w-md">
+                    <p class="text-[10px] font-black text-blue-500 mb-6 uppercase tracking-widest">Vault Registry</p>
+                    <input id="add-gn" placeholder="Game Name" class="w-full bg-black p-4 rounded-2xl border border-zinc-800 mb-2 font-bold outline-none">
+                    <input id="add-gu" placeholder="Embed URL" class="w-full bg-black p-4 rounded-2xl border border-zinc-800 mb-6 font-bold outline-none">
+                    <button onclick="adminAddGame()" class="w-full bg-blue-600 py-4 rounded-2xl font-black uppercase text-sm">Add Game</button>
                 </div>`;
             }
         };
@@ -155,37 +151,56 @@
             const zone = document.getElementById('search-zone');
             if(!val) { zone.classList.add('hidden'); return; }
             zone.classList.remove('hidden');
-            zone.innerHTML = `<p class="text-[10px] font-bold text-zinc-600 mb-2 uppercase">Players Found</p><div id="s-grid" class="flex flex-wrap gap-2"></div>`;
+            zone.innerHTML = `<div id="s-grid" class="flex flex-wrap gap-2"></div>`;
             const q = query(collection(db, "users"), where("username", ">=", val), where("username", "<=", val + "\uf8ff"), limit(6));
             const snap = await getDocs(q);
             snap.forEach(d => {
-                document.getElementById('s-grid').innerHTML += `<div onclick="openProfile('${d.id}')" class="bg-zinc-800 px-4 py-2 rounded-xl cursor-pointer border border-zinc-700 font-bold hover:bg-zinc-700">${d.id}</div>`;
+                document.getElementById('s-grid').innerHTML += `<div onclick="openProfile('${d.id}')" class="bg-zinc-800 px-6 py-3 rounded-2xl cursor-pointer border border-zinc-700 font-black italic uppercase text-xs tracking-tighter hover:bg-zinc-700">${d.id}</div>`;
             });
         };
 
         window.openProfile = async (n) => {
             const s = await getDoc(doc(db, "users", n));
             viewingUser = s.data();
-            document.getElementById('p-name').innerText = viewingUser.username;
-            document.getElementById('p-credits').innerText = `${viewingUser.credits.toLocaleString()} Credits`;
-            document.getElementById('p-badge').innerHTML = viewingUser.role === 'owner' ? `<span class="badge-owner">Owner</span>` : '';
             
+            // Set basic info
+            document.getElementById('p-name').innerText = viewingUser.username;
+            document.getElementById('p-credits').innerText = (viewingUser.credits || 0).toLocaleString();
+            
+            // Set Verification Icon
+            const verIcon = document.getElementById('p-verified');
+            viewingUser.is_verified ? verIcon.classList.remove('hidden') : verIcon.classList.add('hidden');
+
+            // Set Role Badge
+            const bContainer = document.getElementById('p-badge-container');
+            bContainer.innerHTML = "";
+            if(viewingUser.role === 'owner') bContainer.innerHTML = `<span class="badge-owner">Owner</span>`;
+            else if(viewingUser.role === 'admin') bContainer.innerHTML = `<span class="badge-admin">Admin</span>`;
+            
+            // Set Follow Button
             const isF = myData.following?.includes(n);
             const btn = document.getElementById('p-follow-btn');
-            btn.innerText = isF ? 'Unfollow' : 'Follow';
-            btn.className = `w-full py-3 rounded-xl font-bold ${isF ? 'bg-zinc-800 text-zinc-400' : 'bg-blue-600 text-white'}`;
+            btn.innerText = isF ? 'Unfollow' : 'Follow Player';
+            btn.className = `w-full py-4 rounded-2xl font-black uppercase text-sm mb-4 transition ${isF ? 'bg-zinc-800 text-zinc-500' : 'bg-blue-600 text-white shadow-[0_0_20px_rgba(59,130,246,0.3)]'}`;
             btn.onclick = () => toggleFollowAction(n, isF);
 
+            // Show Admin Panel if applicable
             if(myData.role === 'owner' || myData.role === 'admin') {
                 document.getElementById('admin-quick-edit').classList.remove('hidden');
                 document.getElementById('edit-c').value = viewingUser.credits;
+                document.getElementById('edit-v').value = viewingUser.is_verified ? "true" : "false";
             } else { document.getElementById('admin-quick-edit').classList.add('hidden'); }
             
             document.getElementById('profile-modal').style.display = 'flex';
         };
 
         window.saveAdminQuick = async () => {
-            await updateDoc(doc(db, "users", viewingUser.username), { credits: parseInt(document.getElementById('edit-c').value) });
+            const newCreds = parseInt(document.getElementById('edit-c').value);
+            const newVer = document.getElementById('edit-v').value === "true";
+            await updateDoc(doc(db, "users", viewingUser.username), { 
+                credits: newCreds,
+                is_verified: newVer
+            });
             document.getElementById('profile-modal').style.display = 'none';
         };
 
@@ -194,54 +209,12 @@
             openProfile(n);
         };
 
-        // CHAT ENGINE
-        window.loadChatList = () => {
-            const q = query(collection(db, "chats"), where("users", "array-contains", myData.username));
-            onSnapshot(q, s => {
-                const side = document.getElementById('chat-sidebar');
-                if(!side) return;
-                side.innerHTML = "";
-                s.forEach(d => {
-                    const other = d.data().users.find(u => u !== myData.username);
-                    side.innerHTML += `<div onclick="startChatStream('${d.id}')" class="p-5 border-b border-zinc-800 cursor-pointer hover:bg-zinc-800 font-bold">${other}</div>`;
-                });
-            });
-        };
-
-        window.startChatStream = (id) => {
-            activeChat = id;
-            onSnapshot(query(collection(db, "chats", id, "messages"), orderBy("time", "asc")), s => {
-                const win = document.getElementById('msg-window');
-                if(!win) return;
-                win.innerHTML = "";
-                s.forEach(d => {
-                    const m = d.data();
-                    win.innerHTML += `<div class="msg-bubble ${m.sender === myData.username ? 'sent' : 'rcvd'}">${m.text}</div>`;
-                });
-                win.scrollTop = win.scrollHeight;
-            });
-        };
-
-        window.sendDirectMsg = async () => {
-            const val = document.getElementById('msg-in').value.trim();
-            if(!val || !activeChat) return;
-            await addDoc(collection(db, "chats", activeChat, "messages"), { text: val, sender: myData.username, time: serverTimestamp() });
-            document.getElementById('msg-in').value = "";
-        };
-
         window.adminAddGame = async () => {
             const n = document.getElementById('add-gn').value;
             const u = document.getElementById('add-gu').value;
             if(!n || !u) return;
             await addDoc(collection(db, "games"), { name: n, url: u });
             showTab('home');
-        };
-
-        window.adminBroadcast = async () => {
-            const txt = document.getElementById('broad-txt').value;
-            if(!txt) return;
-            await addDoc(collection(db, "broadcasts"), { message: txt, time: serverTimestamp() });
-            document.getElementById('broad-txt').value = "";
         };
 
         window.signOut = signOut;
