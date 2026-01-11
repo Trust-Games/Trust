@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>Trust Games | In-App Play</title>
+    <title>Trust Games | Clean</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
@@ -17,14 +17,7 @@
         .nav-btn { width: 100%; padding: 1rem; text-align: left; font-size: 11px; font-weight: 800; text-transform: uppercase; color: #71717a; border-radius: 0.75rem; }
         .nav-btn.active { color: #fff; background: #18181b; }
         .glass-card { background: #0c0c0e; border: 1px solid #1c1c21; border-radius: 1.5rem; padding: 1.25rem; }
-        .unread-alert { color: #ef4444 !important; font-weight: 900; animation: pulse 2s infinite; }
-        @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
-        .bubble { padding: 12px 16px; border-radius: 1.25rem; max-width: 80%; font-size: 13px; margin-bottom: 8px; }
-        .me { background: #3b82f6; align-self: flex-end; color: white; }
-        .them { background: #1c1c21; align-self: flex-start; color: #a1a1aa; }
         #auth-overlay { position: fixed; inset: 0; background: #000; z-index: 100; display: flex; align-items: center; justify-content: center; padding: 2rem; }
-        
-        /* Iframe styling */
         .game-container { position: absolute; inset: 0; background: #000; z-index: 40; display: flex; flex-direction: column; }
         iframe { flex: 1; border: none; width: 100%; height: 100%; }
     </style>
@@ -37,7 +30,7 @@
             <div class="space-y-3">
                 <input id="log-u" type="text" placeholder="Username" class="w-full bg-zinc-900 border border-zinc-800 p-4 rounded-2xl outline-none">
                 <input id="log-p" type="password" placeholder="Password" class="w-full bg-zinc-900 border border-zinc-800 p-4 rounded-2xl outline-none">
-                <button id="auth-btn" onclick="access('login')" class="w-full bg-blue-600 py-4 rounded-2xl font-black text-xs uppercase">Login</button>
+                <button onclick="access('login')" class="w-full bg-blue-600 py-4 rounded-2xl font-black text-xs uppercase">Login</button>
                 <button onclick="access('reg')" class="w-full bg-zinc-800 py-4 rounded-2xl font-black text-xs uppercase">Register</button>
             </div>
             <p id="auth-err" class="text-red-500 text-[10px] mt-4 font-bold uppercase"></p>
@@ -50,7 +43,6 @@
             <nav class="flex-1 px-4 space-y-1">
                 <button onclick="nav('home')" id="n-home" class="nav-btn active">Vault</button>
                 <button onclick="nav('social')" id="n-social" class="nav-btn">Circle</button>
-                <button onclick="nav('chat')" id="n-chat" class="nav-btn">Messages</button>
                 <button id="n-admin" onclick="nav('admin')" class="nav-btn text-yellow-500 hidden">Staff Room</button>
             </nav>
             <div class="p-6 border-t border-zinc-900">
@@ -60,7 +52,7 @@
             </div>
         </aside>
         <main>
-            <header class="h-16 border-b border-zinc-900 flex items-center px-4 justify-between bg-black shrink-0">
+            <header class="h-16 border-b border-zinc-900 flex items-center px-4 justify-between bg-black">
                 <button onclick="document.getElementById('sidebar').classList.toggle('active')" class="lg:hidden p-2 text-xl">☰</button>
                 <input id="glob-search" oninput="searchUsers()" placeholder="Search..." class="bg-zinc-900 border border-zinc-800 p-2 rounded-xl text-xs w-48 outline-none">
             </header>
@@ -71,7 +63,7 @@
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
         import { getAuth, onAuthStateChanged, signInWithEmailAndPassword, createUserWithEmailAndPassword, setPersistence, browserLocalPersistence } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
-        import { getFirestore, doc, getDoc, setDoc, updateDoc, onSnapshot, collection, query, where, orderBy, addDoc, serverTimestamp, limit, getDocs } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+        import { getFirestore, doc, getDoc, setDoc, updateDoc, onSnapshot, collection, query, where, getDocs } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
         const firebaseConfig = { apiKey: "AIzaSyDV1Iq9F7N152JjXN7goayLLBiES8B4HkU", authDomain: "trust-games-1.firebaseapp.com", projectId: "trust-games-1", storageBucket: "trust-games-1.firebasestorage.app", messagingSenderId: "923318206410", appId: "1:923318206410:web:646cfe42238f9136cb5933" };
         const app = initializeApp(firebaseConfig);
@@ -80,7 +72,7 @@
 
         setPersistence(fireAuth, browserLocalPersistence);
 
-        let me = null, chatUnsub = null, tabsUnsub = null, activeCID = null;
+        let me = null;
 
         onAuthStateChanged(fireAuth, (u) => {
             const overlay = document.getElementById('auth-overlay');
@@ -115,9 +107,6 @@
         };
 
         window.nav = (t) => {
-            if(chatUnsub) chatUnsub();
-            if(tabsUnsub) tabsUnsub();
-            activeCID = null;
             document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
             document.getElementById('n-'+t).classList.add('active');
             document.getElementById('sidebar').classList.remove('active');
@@ -127,80 +116,60 @@
         async function render(t) {
             const view = document.getElementById('view');
             view.innerHTML = `<div class="p-10 text-center text-xs opacity-20 uppercase font-black">Syncing...</div>`;
-            if(t === 'chat') {
-                view.innerHTML = `<div id="c-tabs" class="flex gap-2 overflow-x-auto pb-4 shrink-0"></div><div id="c-msgs" class="flex-1 glass-card overflow-y-auto mb-4 flex flex-col p-4"></div><div class="flex gap-2 shrink-0"><input id="msg-i" class="flex-1 bg-zinc-900 p-4 rounded-2xl text-xs outline-none" placeholder="Message..."><button onclick="send()" class="bg-blue-600 px-8 rounded-2xl font-black text-xs">SEND</button></div>`;
-                tabsUnsub = onSnapshot(query(collection(db, "chats"), where("members", "array-contains", me.username.toLowerCase())), s => {
-                    const tabs = document.getElementById('c-tabs'); if(!tabs) return;
-                    tabs.innerHTML = "";
-                    s.forEach(d => {
-                        const data = d.data();
-                        const other = data.members.find(m => m !== me.username.toLowerCase());
-                        const unread = (data.lastMsgTime?.seconds || 0) > (data.lastRead?.[me.username.toLowerCase()]?.seconds || 0) && activeCID !== d.id;
-                        tabs.innerHTML += `<button onclick="loadChat('${d.id}')" class="px-5 py-2 rounded-xl text-[10px] font-bold border uppercase whitespace-nowrap ${unread ? 'unread-alert' : 'text-zinc-400 border-zinc-800 bg-zinc-800'}">${other} ${unread ? '●' : ''}</button>`;
-                    });
-                });
-            } else if (t === 'home') {
+            
+            if (t === 'home') {
                 const s = await getDocs(collection(db, "games"));
                 view.innerHTML = `<div class="grid grid-cols-2 md:grid-cols-4 gap-4"></div>`;
                 s.forEach(d => { 
-                    view.firstChild.innerHTML += `<div onclick="playGame('${d.data().url}')" class="glass-card flex flex-col items-center justify-center cursor-pointer hover:border-blue-600">🎮<span class="text-[9px] uppercase mt-2">${d.data().name}</span></div>`; 
+                    view.firstChild.innerHTML += `<div onclick="playGame('${d.data().url}')" class="glass-card flex flex-col items-center justify-center cursor-pointer hover:border-blue-600 transition">🎮<span class="text-[9px] uppercase mt-2">${d.data().name}</span></div>`; 
                 });
+            } else if (t === 'social') {
+                view.innerHTML = `<div class="space-y-2"></div>`;
+                if(!me.following || me.following.length === 0) {
+                    view.innerHTML = `<p class="text-center p-10 text-xs text-zinc-600">NO FRIENDS FOLLOWED</p>`;
+                    return;
+                }
+                for(const f of me.following) {
+                    view.firstChild.innerHTML += `<div class="glass-card flex justify-between items-center"><span class="font-bold uppercase text-xs">${f}</span><span class="text-[10px] text-zinc-500">FOLLOWING</span></div>`;
+                }
             } else if (t === 'admin') {
                 const s = await getDocs(collection(db, "users"));
                 view.innerHTML = `<div class="space-y-2"></div>`;
-                s.forEach(d => { view.firstChild.innerHTML += `<div class="glass-card flex justify-between items-center"><span>${d.data().username}</span><button onclick="setV('${d.id}', ${d.data().is_verified})" class="px-4 py-2 rounded-lg text-[9px] ${d.data().is_verified ? 'bg-blue-600' : 'bg-zinc-900'}">VERIFY</button></div>`; });
+                s.forEach(d => {
+                    const u = d.data();
+                    view.firstChild.innerHTML += `<div class="glass-card flex justify-between items-center"><span>${u.username}</span><div class="flex gap-2"><button onclick="addCr('${d.id}')" class="bg-zinc-900 px-3 py-2 rounded-lg text-[9px] font-bold">CR</button><button onclick="setV('${d.id}', ${u.is_verified})" class="px-4 py-2 rounded-lg text-[9px] ${u.is_verified ? 'bg-blue-600' : 'bg-zinc-900'}">V</button></div></div>`;
+                });
             }
         }
 
         window.playGame = (url) => {
-            const view = document.getElementById('view');
-            view.innerHTML = `
+            document.getElementById('view').innerHTML = `
                 <div class="game-container">
                     <div class="p-3 bg-zinc-900 border-b border-zinc-800 flex justify-between items-center">
-                        <span class="text-[10px] font-black uppercase text-zinc-500 tracking-widest">Active Session</span>
-                        <button onclick="nav('home')" class="bg-red-600 px-4 py-2 rounded-lg text-[10px] font-black uppercase tracking-tighter">Leave Game</button>
+                        <span class="text-[10px] font-black uppercase text-zinc-600 tracking-widest">In-App Session</span>
+                        <button onclick="nav('home')" class="bg-red-600 px-4 py-2 rounded-lg text-[10px] font-black uppercase">Leave Game</button>
                     </div>
                     <iframe src="${url}"></iframe>
                 </div>`;
-        };
-
-        window.loadChat = async (id) => {
-            if(chatUnsub) chatUnsub();
-            activeCID = id;
-            await updateDoc(doc(db, "chats", id), { [`lastRead.${me.username.toLowerCase()}`]: serverTimestamp() });
-            chatUnsub = onSnapshot(query(collection(db, "chats", id, "messages"), orderBy("time", "asc"), limit(50)), s => {
-                const box = document.getElementById('c-msgs'); if(!box) return;
-                box.innerHTML = "";
-                s.forEach(d => { box.innerHTML += `<div class="bubble ${d.data().sender === me.username.toLowerCase() ? 'me' : 'them'}">${d.data().text}</div>`; });
-                box.scrollTop = box.scrollHeight;
-            });
-        };
-
-        window.send = async () => {
-            const i = document.getElementById('msg-i'); if(!i.value || !activeCID) return;
-            const text = i.value; i.value = "";
-            await addDoc(collection(db, "chats", activeCID, "messages"), { text, sender: me.username.toLowerCase(), time: serverTimestamp() });
-            await updateDoc(doc(db, "chats", activeCID), { lastMsgTime: serverTimestamp() });
         };
 
         window.searchUsers = async () => {
             const v = document.getElementById('glob-search').value.toLowerCase(); if(!v) return;
             const s = await getDocs(query(collection(db, "users"), where("username", ">=", v), where("username", "<=", v + "\uf8ff"), limit(5)));
             document.getElementById('view').innerHTML = `<div class="space-y-2"></div>`;
-            s.forEach(d => { document.getElementById('view').firstChild.innerHTML += `<div onclick="startMsg('${d.id}')" class="glass-card cursor-pointer uppercase text-xs flex justify-between"><span>${d.id}</span><span>CHAT →</span></div>`; });
-        };
-
-        window.startMsg = async (tid) => {
-            const pair = [me.username.toLowerCase(), tid.toLowerCase()].sort();
-            const cid = pair.join('_');
-            const ref = doc(db, "chats", cid);
-            const snap = await getDoc(ref);
-            if(!snap.exists()) await setDoc(ref, { members: pair, lastRead: {}, lastMsgTime: serverTimestamp() });
-            nav('chat'); setTimeout(() => loadChat(cid), 400);
+            s.forEach(d => {
+                document.getElementById('view').firstChild.innerHTML += `<div class="glass-card uppercase text-xs flex justify-between"><span>${d.id}</span><span class="text-zinc-500">${d.data().credits} CR</span></div>`;
+            });
         };
 
         window.setV = async (id, cur) => {
             await updateDoc(doc(db, "users", id.toLowerCase()), { is_verified: !cur });
+            render('admin');
+        };
+
+        window.addCr = async (id) => {
+            const val = prompt("Set Credits:");
+            if(val !== null) await updateDoc(doc(db, "users", id.toLowerCase()), { credits: parseInt(val) });
             render('admin');
         };
     </script>
