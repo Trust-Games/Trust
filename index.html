@@ -3,212 +3,228 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>Trust Games | Hardened</title>
+    <title>Trust Games | Direct Sync</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
-        :root { --sidebar-w: 260px; }
-        body { background-color: #050505; color: #e4e4e7; font-family: sans-serif; overflow: hidden; height: 100vh; }
-        
-        #app-shell { display: none; height: 100vh; width: 100vw; }
-        
+        * { box-sizing: border-box; }
+        body { background: #050505; color: #e4e4e7; font-family: sans-serif; overflow: hidden; height: 100dvh; }
+        #app-shell { display: none; height: 100dvh; width: 100vw; position: relative; }
+
+        /* Sidebar Overlay Logic */
         .sidebar { 
-            width: var(--sidebar-w); background: #09090b; border-right: 1px solid #18181b; 
-            display: flex; flex-direction: column; transition: transform 0.3s ease;
-            position: fixed; inset-y: 0; left: 0; z-index: 5000;
+            width: 280px; background: #09090b; border-right: 1px solid #18181b; 
+            display: flex; flex-direction: column; height: 100%;
+            position: absolute; left: 0; top: 0; z-index: 5000;
+            transition: transform 0.3s ease; transform: translateX(-100%);
         }
+        .sidebar.active { transform: translateX(0); box-shadow: 20px 0 60px #000; }
         
-        @media (max-width: 1024px) {
-            .sidebar { transform: translateX(-100%); }
-            .sidebar.active { transform: translateX(0); }
-            main { margin-left: 0 !important; width: 100% !important; }
+        @media (min-width: 1024px) {
+            .sidebar { transform: translateX(0); position: relative; }
+            main { flex: 1; }
+            #menu-trigger { display: none; }
         }
 
-        @media (min-width: 1025px) {
-            main { margin-left: var(--sidebar-w); width: calc(100% - var(--sidebar-w)); }
-        }
+        main { display: flex; flex-direction: column; height: 100%; overflow: hidden; }
+        #main-content { flex: 1; overflow-y: auto; padding: 1.5rem; -webkit-overflow-scrolling: touch; }
 
-        .content-area { height: calc(100vh - 80px); overflow-y: auto; padding: 1.5rem; }
-        .tab-btn { width: 100%; padding: 14px 20px; text-align: left; color: #a1a1aa; font-size: 11px; font-weight: 800; text-transform: uppercase; letter-spacing: 1px; }
-        .tab-btn.active { color: #3b82f6; background: #111113; border-right: 4px solid #3b82f6; }
+        /* Admin UI Fix */
+        .admin-box { background: #0f0f12; border: 1px solid #1c1c21; padding: 1rem; border-radius: 1rem; margin-bottom: 0.5rem; }
+        .btn-verify { background: #3b82f6; color: white; padding: 8px 16px; border-radius: 8px; font-size: 10px; font-weight: 900; }
+        .btn-unverify { border: 1px solid #27272a; color: #71717a; padding: 8px 16px; border-radius: 8px; font-size: 10px; }
 
-        .modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.9); z-index: 6000; align-items: center; justify-content: center; p: 4; }
-        .loading-spin { animation: spin 1s linear infinite; }
-        @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+        /* Chat Scaling Fix */
+        .chat-wrap { display: flex; flex-direction: column; height: 100%; background: #09090b; border-radius: 1rem; border: 1px solid #18181b; overflow: hidden; }
+        .msg-bubble { padding: 10px 14px; border-radius: 1rem; max-width: 80%; font-size: 13px; font-weight: 600; }
     </style>
 </head>
 <body>
 
-    <div id="loader" class="fixed inset-0 bg-black z-[9999] flex items-center justify-center font-black text-blue-500">BOOTING SECURE ENGINE...</div>
+    <div id="loader" class="fixed inset-0 bg-black z-[9999] flex items-center justify-center font-black text-blue-500">REPAIRING CONNECTIONS...</div>
 
-    <button onclick="toggleSidebar()" class="lg:hidden fixed top-5 left-5 z-[4000] bg-zinc-900 p-3 rounded-xl border border-zinc-800">
-        <svg width="20" height="20" fill="white" viewBox="0 0 20 20"><path d="M3 5h14M3 10h14M3 15h14" stroke="white" stroke-width="2"/></svg>
-    </button>
+    <button id="menu-trigger" onclick="toggleSide()" class="fixed top-4 left-4 z-[4500] bg-zinc-900 p-3 rounded-xl">☰</button>
 
-    <div id="profile-modal" class="modal" onclick="this.style.display='none'">
-        <div class="bg-[#0c0c0e] p-8 rounded-[2rem] w-full max-w-sm border border-zinc-800" onclick="event.stopPropagation()">
-            <div id="modal-inner"></div>
-        </div>
-    </div>
-
-    <div id="app-shell">
-        <aside id="main-sidebar" class="sidebar">
-            <div class="p-8 text-2xl font-black italic text-white">TRUST</div>
-            <nav class="flex-1">
-                <button onclick="navTo('home')" id="btn-home" class="tab-btn active">Vault</button>
-                <button onclick="navTo('social')" id="btn-social" class="tab-btn">Messages</button>
-                <button onclick="navTo('friends')" id="btn-friends" class="tab-btn">Circle</button>
-                <button onclick="navTo('admin')" id="btn-admin" class="tab-btn text-yellow-500 hidden">Staff Room</button>
+    <div id="app-shell" class="flex">
+        <aside id="sidebar" class="sidebar">
+            <div class="p-8 text-2xl font-black italic">TRUST</div>
+            <nav class="flex-1 px-2 space-y-1">
+                <button onclick="nav('home')" class="w-full text-left p-4 font-bold text-xs uppercase hover:bg-zinc-900 rounded-xl">Vault</button>
+                <button onclick="nav('social')" class="w-full text-left p-4 font-bold text-xs uppercase hover:bg-zinc-900 rounded-xl">Messages</button>
+                <button onclick="nav('friends')" class="w-full text-left p-4 font-bold text-xs uppercase hover:bg-zinc-900 rounded-xl">Circle</button>
+                <button id="adm-nav" onclick="nav('admin')" class="hidden w-full text-left p-4 font-bold text-xs uppercase text-yellow-500">Staff Room</button>
             </nav>
             <div class="p-6 border-t border-zinc-900">
-                <p id="my-name" class="font-bold text-sm text-white"></p>
-                <p id="my-credits" class="text-yellow-500 text-[10px]"></p>
+                <p id="u-display" class="font-bold text-sm text-white"></p>
+                <button onclick="auth.signOut()" class="text-[9px] text-zinc-600 uppercase mt-2">Sign Out</button>
             </div>
         </aside>
 
-        <main id="main-body" class="flex flex-col">
-            <header class="h-20 flex items-center px-6 border-b border-zinc-900 justify-end">
-                <input id="search-bar" oninput="doSearch()" type="text" placeholder="Search ID..." class="bg-zinc-900 p-3 rounded-xl border border-zinc-800 text-xs w-48 focus:w-64 transition-all outline-none">
+        <main>
+            <header class="h-[70px] border-b border-zinc-900 flex items-center px-6 justify-end">
+                <input id="search" oninput="runSearch()" placeholder="Search ID..." class="bg-zinc-900 p-3 rounded-xl text-xs w-48 outline-none border border-transparent focus:border-blue-600">
             </header>
-            <div id="main-content" class="content-area"></div>
+            <div id="main-content"></div>
         </main>
+    </div>
+
+    <div id="modal" class="fixed inset-0 bg-black/90 z-[6000] hidden items-center justify-center p-4" onclick="this.style.display='none'">
+        <div class="bg-[#0c0c0e] w-full max-w-sm rounded-[2rem] p-8 border border-zinc-800" onclick="event.stopPropagation()">
+            <div id="modal-content"></div>
+        </div>
     </div>
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-        import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
-        import { getFirestore, doc, getDoc, setDoc, onSnapshot, collection, query, where, getDocs, updateDoc, deleteDoc, serverTimestamp, orderBy, limit, arrayUnion, arrayRemove } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+        import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+        import { getFirestore, doc, getDoc, setDoc, updateDoc, onSnapshot, collection, query, where, orderBy, addDoc, serverTimestamp, limit, arrayUnion, arrayRemove, getDocs } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
         const firebaseConfig = { apiKey: "AIzaSyDV1Iq9F7N152JjXN7goayLLBiES8B4HkU", authDomain: "trust-games-1.firebaseapp.com", projectId: "trust-games-1", storageBucket: "trust-games-1.firebasestorage.app", messagingSenderId: "923318206410", appId: "1:923318206410:web:646cfe42238f9136cb5933" };
         const app = initializeApp(firebaseConfig);
         const auth = getAuth(app);
         const db = getFirestore(app);
 
-        let myData = null;
+        let me = null, activeChatID = null;
 
-        onAuthStateChanged(auth, (user) => {
-            if (user) {
-                const uID = user.email.split('@')[0].toLowerCase();
-                onSnapshot(doc(db, "users", uID), (snap) => {
-                    if(!snap.exists()) return;
-                    myData = snap.data();
-                    document.getElementById('my-name').innerHTML = `${myData.username}${myData.is_verified ? ' ✅' : ''}`;
-                    document.getElementById('my-credits').innerText = `${myData.credits.toLocaleString()} CR`;
-                    if(['owner','admin'].includes(myData.role)) document.getElementById('btn-admin').classList.remove('hidden');
+        onAuthStateChanged(auth, u => {
+            if (u) {
+                const id = u.email.split('@')[0].toLowerCase();
+                onSnapshot(doc(db, "users", id), snap => {
+                    me = snap.data();
+                    document.getElementById('u-display').innerHTML = `${me.username}${me.is_verified ? ' ✅' : ''}`;
+                    if(['owner','admin'].includes(me.role)) document.getElementById('adm-nav').classList.remove('hidden');
                     document.getElementById('app-shell').style.display = 'flex';
                     document.getElementById('loader').style.display = 'none';
-                    if(!document.getElementById('main-content').innerHTML) showTab('home');
+                    if(!document.getElementById('main-content').innerHTML) nav('home');
                 });
             } else { location.reload(); }
         });
 
-        window.toggleSidebar = () => document.getElementById('main-sidebar').classList.toggle('active');
-
-        window.navTo = (t) => {
-            showTab(t);
-            if(window.innerWidth <= 1024) toggleSidebar();
-        };
+        window.toggleSide = () => document.getElementById('sidebar').classList.toggle('active');
+        window.nav = t => { showTab(t); if(window.innerWidth < 1024) toggleSide(); };
 
         window.showTab = async (t) => {
             const main = document.getElementById('main-content');
-            document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-            if(document.getElementById('btn-'+t)) document.getElementById('btn-'+t).classList.add('active');
-            main.innerHTML = `<div class="flex justify-center p-20"><div class="w-8 h-8 border-4 border-blue-500 border-t-transparent rounded-full loading-spin"></div></div>`;
+            main.innerHTML = `<div class="p-10 text-center animate-pulse text-xs">LOADING...</div>`;
 
             if(t === 'admin') {
-                if(!['owner','admin'].includes(myData.role)) { main.innerHTML = "Access Denied"; return; }
-                const snap = await getDocs(query(collection(db, "users"), limit(50)));
-                main.innerHTML = `<h1 class="text-2xl font-black mb-6">STAFF OVERRIDE</h1><div class="grid gap-2" id="admin-list"></div>`;
+                const snap = await getDocs(collection(db, "users"));
+                main.innerHTML = `<h2 class="text-xl font-black mb-6 uppercase">User Database</h2>`;
                 snap.forEach(d => {
                     const u = d.data();
-                    document.getElementById('admin-list').innerHTML += `
-                        <div onclick="openProfile('${d.id}')" class="bg-zinc-900 p-4 rounded-2xl border border-zinc-800 flex justify-between items-center cursor-pointer hover:border-zinc-500">
-                            <span class="font-bold text-xs uppercase">${u.username}${u.is_verified ? ' ✅' : ''}</span>
-                            <span class="text-[10px] text-zinc-500">${u.role}</span>
+                    main.innerHTML += `
+                        <div class="admin-box flex justify-between items-center">
+                            <span class="text-xs font-bold uppercase">${u.username}</span>
+                            <button onclick="toggleVerify('${d.id}', ${u.is_verified})" class="${u.is_verified ? 'btn-verify' : 'btn-unverify'}">
+                                ${u.is_verified ? 'VERIFIED' : 'VERIFY'}
+                            </button>
                         </div>`;
                 });
             }
 
-            if(t === 'friends') {
-                if(!myData.following || myData.following.length === 0) {
-                    main.innerHTML = `<div class="text-center p-20 text-zinc-600 text-xs font-bold uppercase tracking-widest">No connections found.</div>`;
-                    return;
-                }
-                main.innerHTML = `<h1 class="text-2xl font-black mb-6">MY CIRCLE</h1><div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4" id="f-grid"></div>`;
-                for(const fID of myData.following) {
-                    const fSnap = await getDoc(doc(db, "users", fID.toLowerCase()));
-                    if(fSnap.exists()) {
-                        const f = fSnap.data();
-                        document.getElementById('f-grid').innerHTML += `
-                            <div onclick="openProfile('${fID}')" class="bg-zinc-900 p-6 rounded-[2rem] border border-zinc-800 text-center cursor-pointer hover:bg-zinc-800 transition">
-                                <p class="font-black text-[10px] uppercase">${f.username}${f.is_verified ? ' ✅' : ''}</p>
-                            </div>`;
-                    }
-                }
+            if(t === 'social') {
+                main.innerHTML = `
+                <div class="chat-wrap">
+                    <div id="c-list" class="p-4 border-b border-zinc-900 flex gap-2 overflow-x-auto"></div>
+                    <div id="c-win" class="flex-1 p-4 overflow-y-auto flex flex-col space-y-3"></div>
+                    <div class="p-4 bg-black flex gap-2">
+                        <input id="msg-inp" class="flex-1 bg-zinc-900 p-3 rounded-xl text-xs outline-none" placeholder="Message...">
+                        <button onclick="sendMsg()" class="bg-blue-600 px-6 rounded-xl font-black text-[10px] uppercase">Send</button>
+                    </div>
+                </div>`;
+                onSnapshot(query(collection(db, "chats"), where("members", "array-contains", me.username.toLowerCase())), s => {
+                    const list = document.getElementById('c-list'); if(!list) return; list.innerHTML = "";
+                    s.forEach(d => {
+                        const other = d.data().members.find(m => m !== me.username.toLowerCase());
+                        list.innerHTML += `<button onclick="loadChat('${d.id}')" class="bg-zinc-800 px-4 py-2 rounded-lg text-[10px] font-black uppercase">${other}</button>`;
+                    });
+                });
             }
 
             if(t === 'home') {
-                main.innerHTML = `<div id="s-zone" class="mb-8 hidden"></div><div class="grid grid-cols-2 md:grid-cols-4 gap-4" id="g-grid"></div>`;
-                const snap = await getDocs(collection(db, "games"));
-                snap.forEach(d => {
-                    const g = d.data();
-                    document.getElementById('g-grid').innerHTML += `<div onclick="window.open('${g.url}')" class="bg-zinc-900 aspect-square rounded-[2rem] flex flex-col items-center justify-center border border-zinc-800 hover:border-blue-600 cursor-pointer p-4"><div class="text-3xl mb-2">🎮</div><p class="text-[10px] font-black uppercase">${g.name}</p></div>`;
+                main.innerHTML = `<div class="grid grid-cols-2 sm:grid-cols-4 gap-4" id="g-grid"></div>`;
+                const s = await getDocs(collection(db, "games"));
+                s.forEach(d => {
+                    main.querySelector('#g-grid').innerHTML += `<div onclick="window.open('${d.data().url}')" class="bg-zinc-900 aspect-square rounded-3xl flex flex-col items-center justify-center border border-zinc-800 hover:border-blue-600 transition p-4">
+                        <div class="text-3xl mb-2">🎮</div><p class="text-[10px] font-black uppercase text-zinc-400">${d.data().name}</p>
+                    </div>`;
                 });
             }
         };
 
-        window.openProfile = async (uID) => {
-            const s = await getDoc(doc(db, "users", uID.toLowerCase()));
-            if(!s.exists()) return;
-            const u = s.data();
-            const isMeAdmin = ['owner','admin'].includes(myData.role);
-            const isF = myData.following?.includes(uID.toLowerCase());
+        window.toggleVerify = async (id, current) => {
+            await updateDoc(doc(db, "users", id.toLowerCase()), { is_verified: !current });
+            showTab('admin'); // Refresh list
+        };
 
-            document.getElementById('modal-inner').innerHTML = `
-                <div class="text-center mb-6">
-                    <p class="text-4xl font-black text-yellow-500 mb-1">${u.credits.toLocaleString()}</p>
-                    <h2 class="text-xl font-bold uppercase text-white">${u.username}${u.is_verified ? ' ✅' : ''}</h2>
+        window.loadChat = (id) => {
+            activeChatID = id;
+            onSnapshot(query(collection(db, "chats", id, "messages"), orderBy("time", "asc")), s => {
+                const win = document.getElementById('c-win'); if(!win) return;
+                win.innerHTML = "";
+                s.forEach(d => {
+                    const m = d.data(); const isMe = m.sender === me.username.toLowerCase();
+                    win.innerHTML += `<div class="msg-bubble ${isMe ? 'bg-blue-600 self-end' : 'bg-zinc-800 self-start'}">${m.text}</div>`;
+                });
+                win.scrollTop = win.scrollHeight;
+            });
+        };
+
+        window.sendMsg = async () => {
+            const inp = document.getElementById('msg-inp');
+            if(!inp.value || !activeChatID) return;
+            await addDoc(collection(db, "chats", activeChatID, "messages"), {
+                text: inp.value,
+                sender: me.username.toLowerCase(),
+                time: serverTimestamp()
+            });
+            inp.value = "";
+        };
+
+        window.runSearch = async () => {
+            const v = document.getElementById('search').value.toLowerCase();
+            if(!v) return;
+            const s = await getDocs(query(collection(db, "users"), where("username", ">=", v), where("username", "<=", v + "\uf8ff"), limit(5)));
+            const main = document.getElementById('main-content');
+            main.innerHTML = `<h2 class="text-xs font-black mb-4 uppercase">Search Results</h2>`;
+            s.forEach(d => {
+                main.innerHTML += `<div onclick="openUser('${d.id}')" class="admin-box cursor-pointer hover:border-blue-500">${d.data().username}</div>`;
+            });
+        };
+
+        window.openUser = async (id) => {
+            const s = await getDoc(doc(db, "users", id.toLowerCase()));
+            const u = s.data();
+            const isF = me.following?.includes(id.toLowerCase());
+            document.getElementById('modal-content').innerHTML = `
+                <div class="text-center">
+                    <p class="text-5xl font-black text-yellow-500 mb-2">${u.credits}</p>
+                    <h3 class="text-xl font-black uppercase text-white">${u.username}${u.is_verified ? ' ✅' : ''}</h3>
                 </div>
-                ${isMeAdmin ? `
-                <div class="space-y-3 pt-4 border-t border-zinc-800">
-                    <input id="ed-c" type="number" value="${u.credits}" class="w-full bg-black border border-zinc-800 p-3 rounded-xl text-xs outline-none">
-                    <div class="grid grid-cols-2 gap-2">
-                        <button onclick="quickUpdate('${uID}', 'is_verified', ${!u.is_verified})" class="p-3 rounded-xl border border-zinc-800 text-[10px] font-bold uppercase ${u.is_verified ? 'bg-blue-600' : ''}">Verify</button>
-                        <button onclick="quickUpdate('${uID}', 'is_banned', ${!u.is_banned})" class="p-3 rounded-xl border border-zinc-800 text-[10px] font-bold uppercase ${u.is_banned ? 'bg-red-600' : ''}">Ban</button>
-                    </div>
-                    <button onclick="saveAdminCredits('${uID}')" class="w-full bg-white text-black py-3 rounded-xl font-black text-[10px] uppercase">Update Credits</button>
-                </div>` : ''}
-                <div class="flex gap-2 mt-6">
-                    <button onclick="toggleFollow('${uID}', ${isF})" class="flex-1 py-4 rounded-xl font-black uppercase text-[10px] ${isF ? 'bg-zinc-800' : 'bg-blue-600'}">${isF ? 'Unfollow' : 'Follow'}</button>
+                <div class="mt-8 flex flex-col gap-2">
+                    <button onclick="startChat('${id}')" class="bg-white text-black py-4 rounded-xl font-black uppercase text-xs">Message</button>
+                    <button onclick="follow('${id}', ${isF})" class="bg-zinc-800 py-4 rounded-xl font-black uppercase text-xs">${isF ? 'Unfollow' : 'Follow'}</button>
                 </div>
             `;
-            document.getElementById('profile-modal').style.display = 'flex';
+            document.getElementById('modal').style.display = 'flex';
         };
 
-        window.quickUpdate = async (id, field, val) => {
-            await updateDoc(doc(db, "users", id.toLowerCase()), { [field]: val });
-            openProfile(id);
+        window.startChat = async (id) => {
+            const pair = [me.username.toLowerCase(), id.toLowerCase()].sort();
+            const cid = pair.join('_');
+            const chatRef = doc(db, "chats", cid);
+            if(!(await getDoc(chatRef)).exists()) {
+                await setDoc(chatRef, { members: pair, created: serverTimestamp() });
+            }
+            document.getElementById('modal').style.display = 'none';
+            nav('social');
+            setTimeout(() => loadChat(cid), 500);
         };
 
-        window.saveAdminCredits = async (id) => {
-            const amt = parseInt(document.getElementById('ed-c').value);
-            await updateDoc(doc(db, "users", id.toLowerCase()), { credits: amt });
-            alert("Credits Updated");
-            openProfile(id);
-        };
-
-        window.toggleFollow = async (id, isF) => {
-            await updateDoc(doc(db, "users", myData.username.toLowerCase()), { following: isF ? arrayRemove(id.toLowerCase()) : arrayUnion(id.toLowerCase()) });
-            openProfile(id);
-        };
-
-        window.doSearch = async () => {
-            const v = document.getElementById('search-bar').value.toLowerCase();
-            const z = document.getElementById('s-zone'); if(!v) { z.classList.add('hidden'); return; }
-            z.classList.remove('hidden'); z.innerHTML = "";
-            const snap = await getDocs(query(collection(db, "users"), where("username", ">=", v), where("username", "<=", v + "\uf8ff"), limit(5)));
-            snap.forEach(d => { 
-                z.innerHTML += `<div onclick="openProfile('${d.id}')" class="bg-zinc-900 p-4 rounded-xl cursor-pointer mb-2 font-black uppercase text-[10px] border border-zinc-800 flex justify-between"><span>${d.data().username}</span></div>`; 
+        window.follow = async (id, isF) => {
+            await updateDoc(doc(db, "users", me.username.toLowerCase()), {
+                following: isF ? arrayRemove(id.toLowerCase()) : arrayUnion(id.toLowerCase())
             });
+            openUser(id);
         };
     </script>
 </body>
