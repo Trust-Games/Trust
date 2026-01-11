@@ -3,51 +3,56 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>Trust Games | Recovery</title>
+    <title>Trust Games | Final Fix</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         body { background: #000; color: #fff; font-family: sans-serif; height: 100dvh; overflow: hidden; }
-        .input-field { width: 100%; background: #111; border: 1px solid #222; padding: 1rem; border-radius: 1rem; font-size: 14px; outline: none; transition: 0.2s; }
+        .input-field { width: 100%; background: #111; border: 1px solid #222; padding: 1.25rem; border-radius: 1.25rem; font-size: 15px; outline: none; color: white; }
         .input-field:focus { border-color: #3b82f6; }
         #app-shell { display: none; height: 100%; flex-direction: column; }
-        .view-area { flex: 1; overflow-y: auto; padding: 1.5rem; }
-        .nav-bar { display: flex; background: #09090b; border-top: 1px solid #1c1c21; padding: 10px; justify-content: space-around; }
+        .view-area { flex: 1; overflow-y: auto; padding: 1rem; padding-bottom: 100px; }
+        .nav-bar { display: flex; background: #09090b; border-top: 1px solid #1c1c21; padding: 15px; justify-content: space-around; position: fixed; bottom: 0; left: 0; right: 0; }
         .nav-item { font-size: 10px; font-weight: 800; text-transform: uppercase; color: #555; }
         .nav-item.active { color: #3b82f6; }
+        .msg-bubble { padding: 12px; border-radius: 1rem; max-width: 80%; font-size: 13px; margin-bottom: 8px; }
     </style>
 </head>
 <body>
 
-    <div id="auth-screen" class="fixed inset-0 flex items-center justify-center p-6 z-[9999] bg-black">
+    <div id="auth-screen" class="fixed inset-0 flex items-center justify-center p-8 z-[9999] bg-black">
         <div class="w-full max-w-sm">
-            <h1 class="text-4xl font-black italic mb-8 text-center">TRUST</h1>
+            <h1 class="text-5xl font-black italic mb-2 text-center tracking-tighter">TRUST</h1>
+            <p class="text-center text-zinc-600 text-[10px] font-bold uppercase mb-10 tracking-widest">Secure Access Terminal</p>
             
-            <div id="login-fields" class="space-y-3">
-                <input id="email" type="email" placeholder="Email Address" class="input-field">
-                <input id="pass" type="password" placeholder="Password" class="input-field">
+            <div class="space-y-4">
+                <input id="user-input" type="text" placeholder="Username" class="input-field">
+                <input id="pass-input" type="password" placeholder="Password" class="input-field">
                 
-                <div class="flex gap-2 pt-2">
-                    <button onclick="authAction('login')" class="flex-1 bg-blue-600 py-4 rounded-2xl font-black text-xs uppercase">Login</button>
-                    <button onclick="authAction('reg')" class="flex-1 bg-zinc-800 py-4 rounded-2xl font-black text-xs uppercase">Sign Up</button>
+                <div class="flex gap-3 pt-4">
+                    <button onclick="processAuth('login')" class="flex-1 bg-blue-600 py-4 rounded-2xl font-black text-xs uppercase">Login</button>
+                    <button onclick="processAuth('reg')" class="flex-1 bg-zinc-800 py-4 rounded-2xl font-black text-xs uppercase">Sign Up</button>
                 </div>
             </div>
 
-            <p id="auth-msg" class="text-center text-xs mt-6 text-zinc-500 font-bold uppercase"></p>
+            <p id="auth-err" class="text-center text-[10px] mt-8 text-red-500 font-bold uppercase leading-relaxed"></p>
         </div>
     </div>
 
     <div id="app-shell">
-        <header class="h-16 flex items-center px-6 border-b border-zinc-900 justify-between">
-            <span class="font-black italic">TRUST</span>
-            <button onclick="signOutUser()" class="text-[10px] font-bold text-zinc-500 uppercase">Logout</button>
+        <header class="h-16 flex items-center px-6 border-b border-zinc-900 justify-between bg-black">
+            <span class="font-black italic text-xl">TRUST</span>
+            <div class="flex items-center gap-4">
+                <span id="header-cr" class="text-yellow-500 font-bold text-xs"></span>
+                <button onclick="signOutNow()" class="text-[9px] font-bold text-zinc-600 uppercase">Logout</button>
+            </div>
         </header>
 
         <div id="view" class="view-area"></div>
 
         <nav class="nav-bar">
             <button onclick="nav('home')" class="nav-item active" id="n-home">Vault</button>
-            <button onclick="nav('chat')" class="nav-item" id="n-chat">Chat</button>
-            <button onclick="nav('admin')" class="nav-item hidden text-yellow-500" id="n-admin">Admin</button>
+            <button onclick="nav('chat')" class="nav-item" id="n-chat">Messages</button>
+            <button onclick="nav('admin')" class="nav-item hidden text-yellow-500" id="n-admin">Staff</button>
         </nav>
     </div>
 
@@ -61,102 +66,101 @@
         const auth = getAuth(app);
         const db = getFirestore(app);
 
-        let me = null;
+        let userMe = null;
 
-        // 1. Simple Auth Listener
         onAuthStateChanged(auth, async (user) => {
-            const authScreen = document.getElementById('auth-screen');
-            const appShell = document.getElementById('app-shell');
+            const authDiv = document.getElementById('auth-screen');
+            const shellDiv = document.getElementById('app-shell');
 
             if (user) {
-                authScreen.style.display = 'none';
-                appShell.style.display = 'flex';
-                
                 const id = user.email.split('@')[0].toLowerCase();
-                const snap = await getDoc(doc(db, "users", id));
-                
-                if (snap.exists()) {
-                    me = snap.data();
-                    if (['admin', 'owner'].includes(me.role)) {
-                        document.getElementById('n-admin').classList.remove('hidden');
+                onSnapshot(doc(db, "users", id), (snap) => {
+                    if (snap.exists()) {
+                        userMe = snap.data();
+                        document.getElementById('header-cr').innerText = userMe.credits + " CR";
+                        if (['admin', 'owner'].includes(userMe.role)) document.getElementById('n-admin').classList.remove('hidden');
+                        authDiv.style.display = 'none';
+                        shellDiv.style.display = 'flex';
+                        if(!document.getElementById('view').innerHTML) nav('home');
                     }
-                    nav('home');
-                }
+                });
             } else {
-                authScreen.style.display = 'flex';
-                appShell.style.display = 'none';
+                authDiv.style.display = 'flex';
+                shellDiv.style.display = 'none';
             }
         });
 
-        // 2. Auth Actions
-        window.authAction = async (type) => {
-            const email = document.getElementById('email').value;
-            const pass = document.getElementById('pass').value;
-            const msg = document.getElementById('auth-msg');
-            msg.innerText = "Processing...";
+        window.processAuth = async (type) => {
+            const userBox = document.getElementById('user-input').value.trim().toLowerCase();
+            const passBox = document.getElementById('pass-input').value;
+            const errDisplay = document.getElementById('auth-err');
+            
+            if(!userBox || !passBox) { errDisplay.innerText = "Fill all fields"; return; }
+            
+            // FIX: Append @trust.com to the username to create a valid email format
+            const emailFormat = userBox + "@trust.com";
+            errDisplay.innerText = "Connecting...";
 
             try {
                 if (type === 'login') {
-                    await signInWithEmailAndPassword(auth, email, pass);
+                    await signInWithEmailAndPassword(auth, emailFormat, passBox);
                 } else {
-                    const res = await createUserWithEmailAndPassword(auth, email, pass);
-                    const id = email.split('@')[0].toLowerCase();
-                    await setDoc(doc(db, "users", id), {
-                        username: id, credits: 100, role: 'user', is_verified: false, following: []
+                    await createUserWithEmailAndPassword(auth, emailFormat, passBox);
+                    await setDoc(doc(db, "users", userBox), {
+                        username: userBox, credits: 0, role: 'user', is_verified: false, following: []
                     });
                 }
             } catch (e) {
-                msg.innerText = "Error: " + e.message;
+                errDisplay.innerText = "FAILED: " + e.code;
             }
         };
 
-        window.signOutUser = () => signOut(auth);
+        window.signOutNow = () => signOut(auth);
 
-        // 3. Navigation & Views
         window.nav = (t) => {
             document.querySelectorAll('.nav-item').forEach(i => i.classList.remove('active'));
             document.getElementById('n-'+t).classList.add('active');
-            render(t);
+            renderView(t);
         };
 
-        async function render(t) {
+        async function renderView(t) {
             const view = document.getElementById('view');
-            view.innerHTML = `<p class="text-center mt-10 text-xs opacity-50">LOADING...</p>`;
+            view.innerHTML = `<p class="text-center mt-20 text-[10px] font-bold opacity-30 tracking-widest">SYNCING...</p>`;
 
             if (t === 'home') {
                 const s = await getDocs(collection(db, "games"));
-                view.innerHTML = `<div class="grid grid-cols-2 gap-3"></div>`;
+                view.innerHTML = `<div class="grid grid-cols-2 gap-4"></div>`;
                 s.forEach(d => {
                     view.firstChild.innerHTML += `
-                    <div onclick="window.open('${d.data().url}')" class="bg-zinc-900 aspect-square rounded-3xl border border-zinc-800 flex flex-col items-center justify-center p-4">
-                        <span class="text-2xl mb-2">🎮</span>
-                        <span class="text-[9px] font-black uppercase">${d.data().name}</span>
+                    <div onclick="window.open('${d.data().url}')" class="bg-zinc-900 aspect-square rounded-[2rem] border border-zinc-800 flex flex-col items-center justify-center p-4">
+                        <span class="text-3xl mb-2">🎮</span>
+                        <span class="text-[10px] font-black uppercase tracking-tighter">${d.data().name}</span>
                     </div>`;
                 });
             }
 
             if (t === 'chat') {
-                view.innerHTML = `<div class="space-y-2" id="chat-list"></div>`;
-                const s = await getDocs(query(collection(db, "chats"), where("members", "array-contains", me.username.toLowerCase())));
+                const s = await getDocs(query(collection(db, "chats"), where("members", "array-contains", userMe.username.toLowerCase())));
+                view.innerHTML = `<h2 class="text-xs font-black mb-6 uppercase tracking-widest text-zinc-600">Secure Messages</h2><div class="space-y-3"></div>`;
                 s.forEach(d => {
-                    const other = d.data().members.find(m => m !== me.username.toLowerCase());
-                    view.firstChild.innerHTML += `
-                    <div onclick="enterChat('${d.id}')" class="bg-zinc-900 p-5 rounded-2xl border border-zinc-800 flex justify-between items-center">
-                        <span class="text-xs font-bold uppercase">${other}</span>
-                        <span class="text-blue-500">→</span>
+                    const other = d.data().members.find(m => m !== userMe.username.toLowerCase());
+                    view.lastChild.innerHTML += `
+                    <div onclick="openChatRoom('${d.id}')" class="bg-zinc-900 p-6 rounded-2xl border border-zinc-800 flex justify-between items-center">
+                        <span class="text-xs font-black uppercase">${other}</span>
+                        <div class="w-2 h-2 bg-blue-500 rounded-full"></div>
                     </div>`;
                 });
             }
 
             if (t === 'admin') {
                 const s = await getDocs(collection(db, "users"));
-                view.innerHTML = `<h2 class="text-sm font-black mb-4 uppercase">User List</h2>`;
+                view.innerHTML = `<h2 class="text-xs font-black mb-6 uppercase text-zinc-600">User Management</h2>`;
                 s.forEach(d => {
                     const u = d.data();
                     view.innerHTML += `
-                    <div class="bg-zinc-900 p-4 rounded-xl mb-2 flex justify-between items-center">
+                    <div class="bg-zinc-900 p-4 rounded-2xl mb-2 flex justify-between items-center border border-zinc-800/50">
                         <span class="text-xs font-bold uppercase">${u.username}</span>
-                        <button onclick="toggleV('${d.id}', ${u.is_verified})" class="px-4 py-2 rounded-lg text-[9px] font-black ${u.is_verified ? 'bg-blue-600' : 'bg-zinc-800'}">
+                        <button onclick="setVerified('${d.id}', ${u.is_verified})" class="px-4 py-2 rounded-xl text-[9px] font-black ${u.is_verified ? 'bg-blue-600' : 'bg-zinc-800'}">
                             ${u.is_verified ? 'VERIFIED' : 'VERIFY'}
                         </button>
                     </div>`;
@@ -164,35 +168,35 @@
             }
         }
 
-        window.toggleV = async (id, cur) => {
+        window.setVerified = async (id, cur) => {
             await updateDoc(doc(db, "users", id.toLowerCase()), { is_verified: !cur });
-            render('admin');
+            renderView('admin');
         };
 
-        window.enterChat = (id) => {
+        window.openChatRoom = (id) => {
             const view = document.getElementById('view');
-            view.innerHTML = `<div id="msgs" class="flex-1 space-y-3 mb-20"></div>
-            <div class="fixed bottom-20 left-4 right-4 flex gap-2">
-                <input id="mi" class="flex-1 bg-zinc-900 p-4 rounded-2xl text-xs outline-none" placeholder="Message...">
-                <button onclick="send('${id}')" class="bg-blue-600 px-6 rounded-2xl font-black text-xs">SEND</button>
+            view.innerHTML = `<div id="msg-list" class="flex flex-col pb-24"></div>
+            <div class="fixed bottom-24 left-6 right-6 flex gap-2">
+                <input id="chat-input" class="flex-1 bg-zinc-900 p-4 rounded-2xl text-xs outline-none border border-zinc-800 focus:border-blue-600" placeholder="Type a message...">
+                <button onclick="sendMessage('${id}')" class="bg-blue-600 px-6 rounded-2xl font-black text-xs">SEND</button>
             </div>`;
             
             onSnapshot(query(collection(db, "chats", id, "messages"), orderBy("time", "asc")), s => {
-                const box = document.getElementById('msgs'); if(!box) return;
-                box.innerHTML = "";
+                const list = document.getElementById('msg-list'); if(!list) return;
+                list.innerHTML = "";
                 s.forEach(d => {
-                    const m = d.data(); const isMe = m.sender === me.username.toLowerCase();
-                    box.innerHTML += `<div class="p-3 rounded-xl max-w-[80%] text-xs ${isMe ? 'bg-blue-600 ml-auto' : 'bg-zinc-800'}">${m.text}</div>`;
+                    const m = d.data(); const isMe = m.sender === userMe.username.toLowerCase();
+                    list.innerHTML += `<div class="msg-bubble ${isMe ? 'bg-blue-600 self-end text-white' : 'bg-zinc-800 self-start text-zinc-400'}">${m.text}</div>`;
                 });
                 window.scrollTo(0, document.body.scrollHeight);
             });
         };
 
-        window.send = async (id) => {
-            const i = document.getElementById('mi');
-            if(!i.value) return;
-            await addDoc(collection(db, "chats", id, "messages"), { text: i.value, sender: me.username.toLowerCase(), time: serverTimestamp() });
-            i.value = "";
+        window.sendMessage = async (id) => {
+            const input = document.getElementById('chat-input');
+            if(!input.value) return;
+            await addDoc(collection(db, "chats", id, "messages"), { text: input.value, sender: userMe.username.toLowerCase(), time: serverTimestamp() });
+            input.value = "";
         };
 
     </script>
