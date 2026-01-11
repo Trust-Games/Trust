@@ -7,99 +7,81 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         body { background-color: #050505; color: #e4e4e7; font-family: 'Inter', sans-serif; overflow: hidden; }
-        #app-shell { display: none; height: 100vh; width: 100vw; overflow: hidden; position: relative; }
-        
-        #sidebar { width: 280px; transition: all 0.3s ease; z-index: 50; background: #09090b; border-right: 1px solid #18181b; }
-        #sidebar.minimized { width: 85px; }
-        #sidebar.minimized .nav-text, #sidebar.minimized .user-card-content, #sidebar.minimized h1 { display: none; }
+        #app-shell { display: none; height: 100vh; width: 100vw; overflow: hidden; }
+        #sidebar { width: 280px; background: #09090b; border-right: 1px solid #18181b; display: flex; flex-direction: column; flex-shrink: 0; transition: 0.3s; }
+        #sidebar.minimized { width: 80px; }
+        #sidebar.minimized .nav-text, #sidebar.minimized .user-details { display: none; }
         
         @media (max-width: 768px) {
-            #sidebar { position: fixed; left: -280px; height: 100%; width: 280px; }
-            #sidebar.mobile-open { left: 0; box-shadow: 20px 0 50px rgba(0,0,0,0.9); }
-            #content-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.7); z-index: 40; backdrop-filter: blur(4px); }
-            #content-overlay.active { display: block; }
+            #sidebar { position: fixed; left: -280px; height: 100%; z-index: 50; }
+            #sidebar.mobile-open { left: 0; }
         }
 
-        #notification-container { position: fixed; bottom: 24px; right: 24px; z-index: 999; display: flex; flex-direction: column-reverse; gap: 12px; pointer-events: none; }
-        .toast { background: #18181b; border-left: 4px solid #3b82f6; color: white; padding: 16px; border-radius: 16px; width: 300px; transform: translateX(120%); transition: 0.4s; pointer-events: auto; }
+        #notification-container { position: fixed; bottom: 20px; right: 20px; z-index: 999; display: flex; flex-direction: column-reverse; gap: 10px; pointer-events: none; }
+        .toast { background: #18181b; border-left: 4px solid #3b82f6; padding: 12px 20px; border-radius: 12px; width: 280px; transform: translateX(120%); transition: 0.4s; pointer-events: auto; box-shadow: 0 10px 20px rgba(0,0,0,0.4); }
         .toast.show { transform: translateX(0); }
-        .toast.owner-msg { border-left-color: #facc15; background: #1c1917; border-top: 1px solid #444; }
+        .toast.owner-msg { border-left-color: #facc15; background: #1c1917; }
+
+        .game-card { background: #0f0f12; border-radius: 1.5rem; border: 1px solid #1c1c21; overflow: hidden; }
+        .iframe-container { position: relative; width: 100%; padding-top: 56.25%; background: #000; }
+        .iframe-container iframe { position: absolute; top: 0; left: 0; width: 100%; height: 100%; border: 0; }
         
         #loader { background: #050505; position: fixed; inset: 0; z-index: 200; display: flex; align-items: center; justify-content: center; }
+        .custom-scroll::-webkit-scrollbar { width: 5px; }
+        .custom-scroll::-webkit-scrollbar-thumb { background: #27272a; border-radius: 10px; }
     </style>
 </head>
 <body>
 
+    <div id="loader"><div class="animate-spin rounded-full h-10 w-10 border-t-2 border-blue-500"></div></div>
     <div id="notification-container"></div>
-    <div id="content-overlay" onclick="toggleSidebar()"></div>
-
-    <div id="loader">
-        <div class="text-center">
-            <div class="w-10 h-10 border-4 border-zinc-800 border-t-blue-500 rounded-full animate-spin mx-auto mb-4"></div>
-            <p class="text-xs font-medium text-zinc-500">Connecting...</p>
-        </div>
-    </div>
 
     <div id="auth-overlay" class="fixed inset-0 bg-black z-[100] flex items-center justify-center p-6 hidden">
-        <div class="bg-zinc-900 p-10 rounded-[2.5rem] w-full max-w-md border border-zinc-800 text-center shadow-2xl">
-            <h2 class="text-3xl font-bold mb-2 text-white italic tracking-tighter uppercase">Trust Games</h2>
-            <p class="text-xs text-zinc-500 mb-8 uppercase tracking-widest text-center">Authorized Access Only</p>
-            <div class="space-y-4">
-                <input id="auth-username" type="text" placeholder="Username" class="w-full p-4 bg-black border border-zinc-800 rounded-2xl outline-none text-white focus:border-blue-500 transition">
-                <input id="auth-pass" type="password" placeholder="Password" class="w-full p-4 bg-black border border-zinc-800 rounded-2xl outline-none text-white focus:border-blue-500 transition">
-                <button onclick="handleAuth('login')" class="w-full bg-white text-black font-bold py-4 rounded-2xl active:scale-95 transition">Login</button>
-                <button onclick="handleAuth('register')" class="w-full text-zinc-500 text-xs font-medium hover:text-white transition">Create New Account</button>
+        <div class="bg-zinc-900 p-8 rounded-[2rem] w-full max-w-md border border-zinc-800 text-center">
+            <h2 class="text-2xl font-bold mb-6 text-white italic tracking-tighter">TRUST GAMES</h2>
+            <div class="space-y-3">
+                <input id="auth-username" type="text" placeholder="Username" class="w-full p-4 bg-black border border-zinc-800 rounded-xl outline-none text-white focus:border-blue-500">
+                <input id="auth-pass" type="password" placeholder="Password" class="w-full p-4 bg-black border border-zinc-800 rounded-xl outline-none text-white focus:border-blue-500">
+                <button onclick="handleAuth('login')" class="w-full bg-white text-black font-bold py-4 rounded-xl active:scale-95 transition">Login</button>
+                <button onclick="handleAuth('register')" class="w-full text-zinc-500 text-xs py-2 hover:text-white">Create New Account</button>
             </div>
         </div>
     </div>
 
-    <div id="app-shell" class="flex h-screen w-screen">
-        <aside id="sidebar" class="flex flex-col">
-            <div class="p-6 flex items-center justify-between">
-                <h1 class="text-xl font-bold tracking-tighter text-white">TRUST</h1>
-                <button onclick="toggleSidebar()" class="p-2 text-zinc-500 hover:text-white">
-                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M4 6h16M4 12h16m-7 6h7" stroke-width="2" stroke-linecap="round"/></svg>
-                </button>
-            </div>
-            <nav class="flex-1 px-4 space-y-1">
-                <button onclick="showTab('home')" class="w-full p-4 flex items-center text-zinc-400 font-semibold text-sm hover:bg-zinc-900 rounded-xl transition">
+    <div id="app-shell" class="flex h-screen w-screen overflow-hidden">
+        <aside id="sidebar">
+            <div class="p-6 text-xl font-bold italic tracking-tighter text-white">TRUST</div>
+            <nav class="flex-1 px-4 space-y-1 overflow-y-auto custom-scroll">
+                <button onclick="showTab('home')" class="w-full p-4 flex items-center text-zinc-400 font-semibold hover:bg-zinc-900 rounded-xl transition">
                     <span>🎮</span><span class="nav-text ml-4">Games</span>
                 </button>
-                <button onclick="showTab('messages')" class="w-full p-4 flex items-center text-zinc-400 font-semibold text-sm hover:bg-zinc-900 rounded-xl transition">
+                <button onclick="showTab('messages')" class="w-full p-4 flex items-center text-zinc-400 font-semibold hover:bg-zinc-900 rounded-xl transition">
                     <span>📩</span><span class="nav-text ml-4">Messages</span>
                 </button>
-                <div id="admin-nav" class="hidden pt-4 mt-4 border-t border-zinc-800">
-                    <button onclick="showTab('admin')" class="w-full p-4 flex items-center text-yellow-500 font-bold text-sm hover:bg-zinc-900 rounded-xl transition">
+                <div id="admin-nav" class="hidden border-t border-zinc-800 mt-4 pt-4">
+                    <button onclick="showTab('admin')" class="w-full p-4 flex items-center text-yellow-500 font-bold hover:bg-zinc-900 rounded-xl transition">
                         <span>🛠</span><span class="nav-text ml-4">Admin Panel</span>
                     </button>
                 </div>
             </nav>
-            <div class="p-4">
-                <div class="bg-zinc-900 p-4 rounded-3xl border border-zinc-800 text-center">
+            <div class="p-4 flex-shrink-0 border-t border-zinc-800 bg-zinc-950/50">
+                <div class="bg-zinc-900 p-4 rounded-2xl border border-zinc-800 user-details">
                     <p id="user-display" class="text-xs font-bold text-white truncate"></p>
-                    <div id="verified-icon" class="hidden text-blue-400 text-[10px] font-bold mt-1 uppercase">Verified</div>
-                    <p id="user-credits" class="text-[11px] text-yellow-500 font-mono mt-1">0 Credits</p>
+                    <p id="user-credits" class="text-xs text-yellow-500 font-mono mt-1">0 Credits</p>
                 </div>
-                <button onclick="logoutUser()" class="w-full mt-4 text-[10px] font-bold text-zinc-600 uppercase hover:text-red-500 transition">Sign Out</button>
+                <button onclick="logoutUser()" class="w-full mt-2 text-[10px] text-zinc-600 hover:text-red-500 uppercase font-bold">Sign Out</button>
             </div>
         </aside>
 
-        <main class="flex-1 flex flex-col min-w-0 bg-[#080808]">
-            <header class="md:hidden p-4 border-b border-zinc-900 flex items-center justify-between bg-zinc-950">
-                <button onclick="toggleSidebar()" class="p-2 text-white bg-zinc-900 rounded-xl">
-                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M4 6h16M4 12h16M4 18h16" stroke-width="2" stroke-linecap="round"/></svg>
-                </button>
-                <span class="font-bold text-sm">TRUST GAMES</span>
-                <div class="w-9"></div>
-            </header>
-            <div id="content" class="flex-1 overflow-y-auto p-6 md:p-10"></div>
+        <main class="flex-1 flex flex-col bg-[#080808] min-w-0">
+            <div id="content" class="flex-1 overflow-y-auto p-6 md:p-10 custom-scroll"></div>
         </main>
     </div>
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
         import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
-        import { getFirestore, doc, getDoc, setDoc, onSnapshot, collection, addDoc, query, where, getDocs, updateDoc, increment, serverTimestamp, orderBy, limit } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+        import { getFirestore, doc, getDoc, setDoc, onSnapshot, collection, addDoc, query, where, getDocs, updateDoc, serverTimestamp, orderBy, limit } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
         const firebaseConfig = {
             apiKey: "AIzaSyDV1Iq9F7N152JjXN7goayLLBiES8B4HkU",
@@ -125,26 +107,19 @@
                 onSnapshot(doc(db, "users", username), (snap) => {
                     if (!snap.exists()) return;
                     userProfile = snap.data();
-                    if(userProfile.is_banned) { alert("Account Banned"); signOut(auth); return; }
-
                     document.getElementById('user-display').innerText = userProfile.username;
-                    document.getElementById('user-credits').innerText = `${userProfile.credits} Credits`;
-                    document.getElementById('verified-icon').style.display = userProfile.is_verified ? 'block' : 'none';
+                    document.getElementById('user-credits').innerText = `${userProfile.credits.toLocaleString()} Credits`;
                     if(userProfile.role === 'owner' || userProfile.role === 'admin') document.getElementById('admin-nav').classList.remove('hidden');
-                    
                     document.getElementById('auth-overlay').classList.add('hidden');
                     document.getElementById('loader').style.display = 'none';
                     document.getElementById('app-shell').style.display = 'flex';
                     showTab('home');
                 });
 
-                const bQ = query(collection(db, "broadcasts"), orderBy("time", "desc"), limit(1));
-                onSnapshot(bQ, (s) => s.docChanges().forEach(c => { 
-                    if (c.type === "added" && c.doc.data().time) {
-                        const d = c.doc.data();
-                        notify(d.message, d.role === 'owner' ? "Announcement" : "System", d.role === 'owner' ? 'owner' : 'standard');
-                    }
-                }));
+                // Listen for global announcements
+                onSnapshot(query(collection(db, "broadcasts"), orderBy("time", "desc"), limit(1)), (s) => {
+                    s.docChanges().forEach(c => { if(c.type === "added" && c.doc.data().time) notify(c.doc.data().message, "Announcement", "owner") });
+                });
             }
         });
 
@@ -153,11 +128,11 @@
             const p = document.getElementById('auth-pass').value;
             if(!u || !p) return;
             try {
-                if (type === 'register') {
+                if(type === 'register') {
                     await createUserWithEmailAndPassword(auth, `${u}@trustgames.com`, p);
                     await setDoc(doc(db, "users", u), { username: u, credits: 0, role: 'user', is_verified: false, is_banned: false, createdAt: serverTimestamp() });
                 } else await signInWithEmailAndPassword(auth, `${u}@trustgames.com`, p);
-            } catch (err) { notify(err.message, "Login Failed"); }
+            } catch (e) { notify(e.message, "Error"); }
         };
 
         window.logoutUser = () => signOut(auth).then(() => location.reload());
@@ -172,27 +147,60 @@
             setTimeout(() => { toast.classList.remove('show'); setTimeout(() => toast.remove(), 500); }, 6000);
         };
 
-        window.showTab = (t) => {
+        window.showTab = async (t) => {
             const main = document.getElementById('content');
-            if (t === 'home') main.innerHTML = `<h2 class="text-2xl font-bold mb-8 italic uppercase">Games</h2><div id="gl" class="grid grid-cols-1 lg:grid-cols-2 gap-8"></div>`;
+            main.innerHTML = "";
+
+            if (t === 'home') {
+                main.innerHTML = `<h2 class="text-2xl font-bold mb-8">Game Vault</h2><div id="game-list" class="grid grid-cols-1 lg:grid-cols-2 gap-6"></div>`;
+                const snap = await getDocs(collection(db, "games"));
+                snap.forEach(d => {
+                    const g = d.data();
+                    document.getElementById('game-list').innerHTML += `<div class="game-card"><div class="iframe-container"><iframe src="${g.url}"></iframe></div><div class="p-4 font-bold">${g.name}</div></div>`;
+                });
+            }
+
+            if (t === 'messages') {
+                main.innerHTML = `
+                <div class="flex h-full bg-zinc-900/30 rounded-3xl border border-zinc-800 overflow-hidden">
+                    <div class="w-80 border-r border-zinc-800 flex flex-col">
+                        <div class="p-6 font-bold text-lg border-b border-zinc-800">Inbox</div>
+                        <div id="chat-list" class="flex-1 overflow-y-auto p-4 space-y-2"></div>
+                    </div>
+                    <div class="flex-1 flex flex-col">
+                        <div id="chat-header" class="p-6 border-b border-zinc-800 text-zinc-500">Select a conversation</div>
+                        <div id="chat-bubbles" class="flex-1 overflow-y-auto p-6 space-y-4"></div>
+                        <div class="p-6 border-t border-zinc-800 flex gap-4">
+                            <input id="msg-input" placeholder="Type message..." class="flex-1 bg-zinc-900 p-4 rounded-xl outline-none border border-transparent focus:border-blue-500">
+                            <button onclick="sendMessage()" class="bg-blue-600 px-6 rounded-xl font-bold">Send</button>
+                        </div>
+                    </div>
+                </div>`;
+            }
+
             if (t === 'admin') {
                 main.innerHTML = `
                 <div class="max-w-4xl space-y-8">
-                    <h2 class="text-2xl font-bold text-yellow-500">Admin Panel</h2>
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
-                        <div class="bg-zinc-900 p-8 rounded-[2rem] border border-yellow-500/30">
-                            <h3 class="text-xs font-bold text-yellow-500 mb-4 uppercase">Announcement</h3>
-                            <textarea id="ann-msg" placeholder="Write message..." class="w-full bg-black border border-zinc-800 p-4 rounded-xl text-white mb-4 h-24 outline-none"></textarea>
-                            <button onclick="sendAnnounce()" class="w-full bg-yellow-500 text-black font-bold py-3 rounded-xl">Post Announcement</button>
+                    <h2 class="text-2xl font-bold text-yellow-500">Admin Control</h2>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div class="bg-zinc-900 p-6 rounded-2xl border border-yellow-500/20">
+                            <h3 class="text-xs font-bold uppercase mb-4 text-yellow-500">Push Announcement</h3>
+                            <textarea id="ann-msg" class="w-full bg-black border border-zinc-800 p-3 rounded-lg mb-4 h-24 text-white outline-none"></textarea>
+                            <button onclick="sendAnnounce()" class="w-full bg-yellow-500 text-black font-bold py-3 rounded-lg">Post to Everyone</button>
                         </div>
-                        <div class="bg-zinc-900 p-8 rounded-[2rem] border border-zinc-800">
-                            <h3 class="text-xs font-bold text-blue-400 mb-4 uppercase">User Control</h3>
-                            <input id="mod-u" placeholder="Username" class="w-full bg-black border border-zinc-800 p-4 rounded-xl mb-4 text-white">
-                            <div class="grid grid-cols-2 gap-2">
-                                <button onclick="modUser('verify', true)" class="bg-blue-600/20 text-blue-400 p-3 rounded-xl text-xs font-bold">Verify</button>
-                                <button onclick="modUser('verify', false)" class="bg-red-600 text-white p-3 rounded-xl text-xs font-bold">Unverify</button>
-                                <button onclick="modUser('ban', true)" class="bg-red-900 text-white p-3 rounded-xl text-xs font-bold">Ban</button>
-                                <button onclick="modUser('ban', false)" class="bg-green-600 text-white p-3 rounded-xl text-xs font-bold">Unban</button>
+                        <div class="bg-zinc-900 p-6 rounded-2xl border border-blue-500/20">
+                            <h3 class="text-xs font-bold uppercase mb-4 text-blue-400">Add New Game</h3>
+                            <input id="g-name" placeholder="Game Name" class="w-full bg-black border border-zinc-800 p-3 rounded-lg mb-2 text-white">
+                            <input id="g-url" placeholder="Iframe URL" class="w-full bg-black border border-zinc-800 p-3 rounded-lg mb-4 text-white">
+                            <button onclick="addGame()" class="w-full bg-blue-600 text-white font-bold py-3 rounded-lg">Add to Vault</button>
+                        </div>
+                        <div class="bg-zinc-900 p-6 rounded-2xl border border-zinc-800 col-span-1 md:col-span-2">
+                            <h3 class="text-xs font-bold uppercase mb-4">User Management</h3>
+                            <div class="flex gap-2">
+                                <input id="mod-u" placeholder="Target Username" class="flex-1 bg-black border border-zinc-800 p-3 rounded-lg text-white">
+                                <button onclick="modUser('verify', true)" class="bg-blue-600/20 text-blue-400 px-4 rounded-lg font-bold">Verify</button>
+                                <button onclick="modUser('verify', false)" class="bg-red-600 text-white px-4 rounded-lg font-bold">Unverify</button>
+                                <button onclick="modUser('ban', true)" class="bg-red-900 text-white px-4 rounded-lg font-bold">Ban</button>
                             </div>
                         </div>
                     </div>
@@ -201,32 +209,36 @@
         };
 
         window.sendAnnounce = async () => {
-            if (userProfile.role !== 'owner') { notify("Requires Owner Role", "Denied"); return; }
             const m = document.getElementById('ann-msg').value.trim();
-            if(!m) return;
+            if(!m || userProfile.role !== 'owner') return;
             try {
                 await addDoc(collection(db, "broadcasts"), { message: m, role: 'owner', time: serverTimestamp() });
                 document.getElementById('ann-msg').value = "";
                 notify("Announcement Sent");
-            } catch (e) { notify("Database Error: Check Rules", "Error"); }
+            } catch (e) { notify("Error: Check Firebase Rules", "Denied"); }
         };
 
-        window.modUser = async (action, value) => {
+        window.addGame = async () => {
+            const n = document.getElementById('g-name').value;
+            const u = document.getElementById('g-url').value;
+            if(!n || !u) return;
+            await addDoc(collection(db, "games"), { name: n, url: u });
+            notify("Game added to Vault");
+            showTab('home');
+        };
+
+        window.modUser = async (act, val) => {
             const u = document.getElementById('mod-u').value.trim().toLowerCase();
             if(!u) return;
             const ref = doc(db, "users", u);
             try {
-                if(action === 'verify') await updateDoc(ref, { is_verified: value });
-                if(action === 'ban') await updateDoc(ref, { is_banned: value });
-                notify(`${u} updated`);
+                if(act === 'verify') await updateDoc(ref, { is_verified: val });
+                if(act === 'ban') await updateDoc(ref, { is_banned: val });
+                notify("User updated");
             } catch (e) { notify("User not found"); }
         };
 
-        window.toggleSidebar = () => {
-            const sb = document.getElementById('sidebar');
-            if (window.innerWidth <= 768) { sb.classList.toggle('mobile-open'); document.getElementById('content-overlay').classList.toggle('active'); }
-            else sb.classList.toggle('minimized');
-        };
+        window.toggleSidebar = () => document.getElementById('sidebar').classList.toggle('mobile-open');
     </script>
 </body>
 </html>
